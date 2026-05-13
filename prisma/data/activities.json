@@ -1,0 +1,76 @@
+[
+  {
+    "id": "ACT-1.1",
+    "titulo": "1.1: Identificación de Hechos",
+    "descripcion": "Analiza el reporte del clima en Córdoba y marca las oraciones que muestran datos medibles y comprobables.",
+    "nivel": "BASIC",
+    "fase": "ANALYSIS",
+    "tipo": "TEXT_MARKUP",
+    "puntajeMaximo": 100,
+    "contenido": {
+      "base": "El nivel del río Sinú en Lorica superó los 7 metros. La gente está muy preocupada por sus cultivos. Se registran lluvias de 40mm por hora en el Alto Sinú. Seguramente este es el peor invierno de la historia.",
+      "segments": [
+        { "id": "H1", "texto": "El nivel del río Sinú en Lorica superó los 7 metros." },
+        { "id": "O1", "texto": " La gente está muy preocupada por sus cultivos." },
+        { "id": "H2", "texto": " Se registran lluvias de 40mm por hora en el Alto Sinú." },
+        { "id": "O2", "texto": " Seguramente este es el peor invierno de la historia." }
+      ]
+    },
+    "claveRespuestas": {
+      "correctIds": ["H1", "H2"],
+      "feedback": {
+        "O1": "Recuerda que un hecho no cambia según lo que sintamos. Busca números o datos técnicos.",
+        "O2": "Este es un juicio de valor, no un dato medible. Busca evidencias físicas."
+      }
+    },
+    "materialApoyo": {
+      "lectura": "Un hecho es una afirmación que puede ser verificada independientemente a través de mediciones o registros oficiales.",
+      "pista": "Busca oraciones que contengan números o unidades de medida (metros, milímetros)."
+    }
+  },
+  {
+    "id": "ACT-1.2",
+    "titulo": "1.2: Identificación de Propósitos",
+    "descripcion": "Relaciona cada parte del mensaje del líder comunitario con su intención lógica.",
+    "nivel": "BASIC",
+    "fase": "ANALYSIS",
+    "tipo": "DRAG_AND_DROP",
+    "puntajeMaximo": 100,
+    "contenido": {
+      "items": [
+        { "id": "A", "texto": "Abrir albergues en el colegio" },
+        { "id": "B", "texto": "El agua está entrando a las casas" }
+      ],
+      "categories": [
+        { "id": "1", "nombre": "Propósito / Acción esperada" },
+        { "id": "2", "nombre": "Evidencia de la situación" }
+      ]
+    },
+    "claveRespuestas": {
+      "mapping": {
+        "A": "1",
+        "B": "2"
+      }
+    }
+  },
+  {
+    "id": "ACT-2.1",
+    "titulo": "2.1: Credibilidad de Fuentes (Urrá)",
+    "descripcion": "Clasifica a quién deberías creerle sobre el estado de la represa de Urrá.",
+    "nivel": "BASIC",
+    "fase": "EVALUATION",
+    "tipo": "MULTIPLE_CHOICE_REASONED",
+    "puntajeMaximo": 100,
+    "contenido": {
+      "pregunta": "Te llega un audio de WhatsApp de un vecino enojado diciendo que la represa va a colapsar. ¿Es una fuente experta?",
+      "opciones": [
+        { "id": "a", "texto": "Sí, porque está en el lugar de los hechos." },
+        { "id": "b", "texto": "No, estar en el lugar no te hace experto en meteorología o ingeniería.", "justificacion": "¡Cuidado! Una fuente experta requiere estudios técnicos y acceso a datos oficiales, no solo presencia física." },
+        { "id": "c", "texto": "Depende de cuántas personas hayan compartido el audio." }
+      ]
+    },
+    "claveRespuestas": {
+      "correcta": "b"
+    }
+  }
+]

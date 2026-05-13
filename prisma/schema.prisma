@@ -1,0 +1,291 @@
+// ════════════════════════════════════════════════════════════════════════════
+// PRISMA SCHEMA – Sistema Tutor Inteligente (STI)
+// Base de datos PostgreSQL con modelos de gamificación, analítica y metacognición.
+// ════════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── ENUMS ──────────────────────────────────────────────────────────────
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum Level {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Phase {
+  ANALYSIS
+  EVALUATION
+  JUDGMENT
+}
+
+enum ActivityType {
+  DRAG_AND_DROP
+  MULTIPLE_CHOICE_REASONED
+  TEXT_MARKUP
+  ARGUMENT_BUILDER
+  FALLACY_IDENTIFICATION
+  OPEN_JUDGMENT
+}
+
+enum ErrorType {
+  CONCEPTUAL
+  LOGICAL
+  PROCEDURAL
+  READING_COMPREHENSION
+  DISTRACTOR
+}
+
+// ── MODELOS BASE ───────────────────────────────────────────────────────
+
+/// Cuenta base de autenticación para todos los usuarios.
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
+  code     String? @unique // Código de login (EST-xxx o DOC-xxx)
+  password String // Hash bcrypt
+  name     String
+  role     Role    @default(STUDENT)
+  active   Boolean @default(true)
+
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  studentProfile StudentProfile?
+  sessionLogs    SessionLog[]
+}
+
+/// Perfil extendido exclusivo para estudiantes con datos institucionales y de gamificación global.
+model StudentProfile {
+  id                String  @id @default(uuid())
+  userId            String  @unique
+  codigoEstudiantil String? @unique
+  institucion       String?
+
+  // Gamificación y Progreso Global
+  totalPoints    Int       @default(0)
+  currentStreak  Int       @default(0)
+  lastActivityAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relaciones pedagógicas
+  progresses    Progress[]
+  attempts      ActivityAttempt[]
+  checklists    MetacognitionChecklist[]
+  reflections   Reflection[]
+  earnedBadges  EarnedBadge[]
+  errorPatterns ErrorPattern[]
+
+  @@index([codigoEstudiantil])
+}
+
+// ── MOTOR PEDAGÓGICO E INSTRUCCIÓN ─────────────────────────────────────
+
+/// Progreso del estudiante segmentado por nivel y fase.
+model Progress {
+  id               String @id @default(uuid())
+  studentProfileId String
+
+  level Level @default(BASIC)
+  phase Phase @default(ANALYSIS)
+  subPhase String?
+
+  // Porcentaje de completitud en esta combinación específica (0-100)
+  percentCompleted Float @default(0)
+  accumulatedScore Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  // Índice compuesto clave para consultas del Motor Pedagógico
+  @@unique([studentProfileId, level, phase, subPhase])
+  @@index([studentProfileId, level, phase, subPhase])
+}
+
+/// Catálogo de actividades y ejercicios disponibles en el sistema.
+model Activity {
+  id          String       @id @default(uuid())
+  titulo      String
+  descripcion String?      @db.Text
+  fase        Phase
+  subPhase    String?
+  nivel       Level
+  tipo        ActivityType
+
+  // JSONB permite flexibilidad para distintos tipos de interactividad (preguntas, opciones, etc)
+  contenido       Json
+  claveRespuestas Json
+
+  puntajeMaximo Float   @default(100)
+  isPublished   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempts ActivityAttempt[]
+
+  @@index([nivel, fase])
+}
+
+/// Registro de cada intento de resolución de una actividad por un estudiante.
+model ActivityAttempt {
+  id               String @id @default(uuid())
+  studentProfileId String
+  activityId       String
+
+  intentoNumero   Int    @default(1)
+  respuesta       Json? // Lo que respondió el estudiante
+  puntajeObtenido Float?
+  tiempoSegundos  Int    @default(0)
+
+  // Confianza reportada ANTES de realizar la actividad (escala 1-3)
+  confianzaPrevia  Int?
+  feedbackRecibido Json? // Retroalimentación otorgada por el motor
+
+  createdAt DateTime @default(now())
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  activity       Activity       @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  reflection     Reflection? // Una reflexión puede estar vinculada a un intento
+  errorPatterns  ErrorPattern[] // Errores detectados en este intento
+
+  @@index([studentProfileId, activityId])
+}
+
+// ── METACOGNICIÓN Y REFLEXIÓN ──────────────────────────────────────────
+
+/// Planificación metacognitiva previa a sesiones o bloques de actividades.
+model MetacognitionChecklist {
+  id               String  @id @default(uuid())
+  studentProfileId String
+  sessionId        String? // Si se vincula a una sesión particular
+
+  queSe                   String? @db.Text
+  queEsperoAprender       String? @db.Text
+  confianzaInicial        Int? // Escala 1-5
+  estrategias             Json? // Lista de estrategias a usar
+  tiempoEstimado          Int? // En minutos
+  entornoSinDistracciones Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  session        SessionLog?    @relation(fields: [sessionId], references: [id])
+}
+
+/// Reflexión profunda después de una actividad o hito.
+model Reflection {
+  id                String  @id @default(uuid())
+  studentProfileId  String
+  activityAttemptId String? @unique
+
+  queAprendi        String? @db.Text
+  queFueDificil     String? @db.Text
+  autoEvaluacion    Int? // Del 1 al 5
+  transferencia     String? @db.Text // ¿Cómo aplico esto en otro contexto?
+  queHariaDiferente String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  studentProfile  StudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  activityAttempt ActivityAttempt? @relation(fields: [activityAttemptId], references: [id], onDelete: SetNull)
+}
+
+// ── GAMIFICACIÓN Y NARRATIVA ───────────────────────────────────────────
+
+/// Catálogo de insignias obtenibles.
+model Badge {
+  id          String  @id @default(uuid())
+  nombre      String  @unique
+  descripcion String  @db.Text
+  icono       String?
+
+  // Reglas de desbloqueo en formato JSON (ej. { "streak": 3 } o { "perfectScore": true })
+  condiciones Json
+
+  createdAt DateTime @default(now())
+
+  earnedBadges EarnedBadge[]
+}
+
+/// Registro de insignias obtenidas por estudiantes.
+model EarnedBadge {
+  id               String   @id @default(uuid())
+  studentProfileId String
+  badgeId          String
+  earnedAt         DateTime @default(now())
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  badge          Badge          @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([studentProfileId, badgeId]) // Una misma insignia no se gana dos veces por el mismo estudiante
+}
+
+/// Capítulos de la historia inmersiva que se desbloquean al avanzar.
+model NarrativeChapter {
+  id        String @id @default(uuid())
+  numero    Int    @unique
+  titulo    String
+  contenido String @db.Text
+
+  // Requisitos para desbloquear (cuándo se lee esto)
+  desbloqueadoEnNivel Level
+  desbloqueadoEnFase  Phase
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── ANALÍTICA Y TRAZABILIDAD ───────────────────────────────────────────
+
+/// Registros de sesión para métricas de retención, tiempo de uso y comportamiento.
+model SessionLog {
+  id         String    @id @default(uuid())
+  userId     String
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+  deviceInfo Json?
+
+  user       User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checklists MetacognitionChecklist[]
+}
+
+/// Detección y rastreo de patrones de error en los estudiantes.
+model ErrorPattern {
+  id                String  @id @default(uuid())
+  studentProfileId  String
+  activityAttemptId String?
+
+  tipoError   ErrorType
+  frecuencia  Int       @default(1)
+  descripcion String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfile  StudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+  activityAttempt ActivityAttempt? @relation(fields: [activityAttemptId], references: [id], onDelete: SetNull)
+
+  @@index([studentProfileId, tipoError])
+}

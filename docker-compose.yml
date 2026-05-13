@@ -1,0 +1,37 @@
+services:
+  simect-db:
+    image: postgres:15-alpine
+    container_name: simect-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=simect
+    ports:
+      - "5432:5432"
+    volumes:
+      - simect_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  simect-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: simect-app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@simect-db:5432/simect?schema=public
+      - NUXT_SESSION_PASSWORD=837492837492837492837492837492837492
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=3000
+    depends_on:
+      simect-db:
+        condition: service_healthy
+
+volumes:
+  simect_data:
