@@ -90,8 +90,11 @@ export default defineEventHandler(async (event) => {
     }
     
   } catch (error: any) {
-    console.error('Error en API de Registro:', error)
-    
+    // Log detallado para Vercel
+    console.error('--- ERROR REGISTER API ---')
+    console.error('Message:', error.message)
+    console.error('Stack:', error.stack)
+
     // Manejo específico de errores de Prisma
     if (error.code === 'P2002') {
       const field = error.meta?.target?.includes('email') ? 'correo' : 'código';
@@ -103,7 +106,7 @@ export default defineEventHandler(async (event) => {
 
     throw createError({
       statusCode: error.statusCode || 500,
-      statusMessage: error.statusMessage || 'Error al crear la cuenta',
+      statusMessage: error.statusMessage || `Error al crear la cuenta: ${error.message || 'Error desconocido'}`,
     })
   }
 })

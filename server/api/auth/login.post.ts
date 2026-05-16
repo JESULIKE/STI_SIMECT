@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
 
     // Limpiar espacios accidentales y normalizar
     studentCode = studentCode.trim()
-    
+
     // Si el código parece institucional, forzar mayúsculas (igual que en registro)
     if (studentCode.toLowerCase().startsWith('est-') || studentCode.toLowerCase().startsWith('doc-')) {
       studentCode = studentCode.toUpperCase()
@@ -55,7 +55,7 @@ export default defineEventHandler(async (event) => {
     if (dbUser.role === 'STUDENT' && dbUser.studentProfile) {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-      
+
       const lastActivity = dbUser.studentProfile.lastActivityAt ? new Date(dbUser.studentProfile.lastActivityAt) : null
       if (lastActivity) lastActivity.setHours(0, 0, 0, 0)
 
@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
         newStreak = 1
       } else {
         const diffDays = Math.round((today.getTime() - lastActivity.getTime()) / oneDayInMs)
-        
+
         if (diffDays === 1) {
           newStreak += 1 // Entró ayer, racha continúa
         } else if (diffDays > 1) {
@@ -76,9 +76,9 @@ export default defineEventHandler(async (event) => {
 
       await prisma.studentProfile.update({
         where: { id: dbUser.studentProfile.id },
-        data: { 
+        data: {
           currentStreak: newStreak,
-          lastActivityAt: new Date() 
+          lastActivityAt: new Date()
         }
       })
     }
@@ -102,10 +102,15 @@ export default defineEventHandler(async (event) => {
     return { message: 'Bienvenido al STI', user: sessionUser }
 
   } catch (error: any) {
-    console.error('Error en API de Login:', error)
+    // Log detallado para Vercel
+    console.error('--- ERROR LOGIN API ---')
+    console.error('Message:', error.message)
+    console.error('Stack:', error.stack)
+    if (error.code) console.error('Prisma Error Code:', error.code)
+
     throw createError({
       statusCode: error.statusCode || 500,
-      statusMessage: error.statusMessage || 'Error en el servidor de autenticación',
+      statusMessage: error.statusMessage || `Error en el servidor: ${error.message || 'Error desconocido'}`,
     })
   }
 })
