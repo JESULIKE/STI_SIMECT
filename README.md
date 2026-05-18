@@ -4,7 +4,7 @@
 
 ---
 
-## ✨ Características Principales
+## Características Principales
 
 - **🗺️ Mapa de Aprendizaje Dinámico:** Ruta pedagógica que evoluciona en tiempo real según el desempeño del estudiante.
 - **🧠 Monitoreo Metacognitivo:** Implementación del modelo de Flavell para fomentar la autorreflexión antes y después de cada desafío.
