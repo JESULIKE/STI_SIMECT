@@ -68,46 +68,71 @@ export default defineEventHandler(async (event) => {
 
     console.log('[Submit] Evaluación completada. Puntaje:', evaluation.scoreDetails.totalGained)
 
-    // 3. Verificar si ya completó esta actividad antes
-    const previousSuccess = await prisma.activityAttempt.findFirst({
-      where: { 
-        studentProfileId, 
-        activityId, 
-        puntajeObtenido: { gte: 10 } 
-      }
-    })
+    // 3. Obtener el estado actual del estudiante (intentos previos y totales)
+    const [successfulAttempts, phaseTotal, levelTotal] = await Promise.all([
+      prisma.activityAttempt.findMany({
+        where: {
+          studentProfileId,
+          puntajeObtenido: { gte: 10 }
+        },
+        select: {
+          activityId: true,
+          activity: {
+            select: { fase: true, nivel: true, subPhase: true }
+          }
+        },
+        distinct: ['activityId']
+      }),
+      // Total en esta fase
+      prisma.activity.count({
+        where: { fase: activity.fase, nivel: activity.nivel, isPublished: true }
+      }),
+      // Total en el nivel
+      prisma.activity.count({
+        where: { nivel: activity.nivel, isPublished: true }
+      }),
+    ])
 
-    const isFirstSuccess = !previousSuccess && evaluation.scoreDetails.totalGained >= 10
+    const isFirstSuccess = !successfulAttempts.some(a => a.activityId === activityId) && evaluation.scoreDetails.totalGained >= 10
 
     // 4. Calcular progreso dinámico si es primera vez exitosa
     let subPhaseUnlocked: string | null = null
     let progressPercent = 0
+    let bonusPointsAwarded = 0
+    let bonusMessage: string | null = null
 
     if (isFirstSuccess && activity.subPhase) {
       const config = SUBPHASE_CONFIG[activity.subPhase]
       
-      // Contar cuántas actividades de esta subfase ya completó (incluyendo esta)
-      const completedInSubPhase = await prisma.activityAttempt.count({
-        where: {
-          studentProfileId,
-          puntajeObtenido: { gte: 10 },
-          activity: {
-            fase: activity.fase,
-            nivel: activity.nivel,
-            subPhase: activity.subPhase,
-            id: { not: activityId } // Excluir la actual (aún no guardada)
-          }
-        }
-      })
+      // Contar cuántas actividades de esta subfase ya completó (sin contar la actual)
+      const completedInSubPhase = successfulAttempts.filter(
+        a => a.activity.fase === activity.fase &&
+             a.activity.nivel === activity.nivel &&
+             a.activity.subPhase === activity.subPhase &&
+             a.activityId !== activityId
+      ).length
       
       const completedAfterThis = completedInSubPhase + 1
       const total = config?.totalActivities || 6
       progressPercent = Math.min((completedAfterThis / total) * 100, 100)
 
       // Verificar si ya completó la subfase completa
-      if (completedAfterThis >= total && config?.nextSubPhase) {
-        subPhaseUnlocked = config.nextSubPhase
-        console.log(`[Submit] ¡Subfase ${activity.subPhase} completada! Desbloqueando ${subPhaseUnlocked}`)
+      if (completedAfterThis >= total) {
+        if (config?.nextSubPhase) {
+          subPhaseUnlocked = config.nextSubPhase
+          console.log(`[Submit] ¡Subfase ${activity.subPhase} completada! Desbloqueando ${subPhaseUnlocked}`)
+        } else {
+          // Si nextSubPhase es null, significa que completó toda la Fase!
+          bonusPointsAwarded += 50
+          bonusMessage = "¡Fase completada exitosamente! +50 Puntos Bonus 🎉"
+          console.log(`[Submit] ¡Fase ${activity.fase} completada! Otorgando 50 puntos de bonus.`)
+          
+          if (activity.subPhase === '3.2') {
+            bonusPointsAwarded += 150
+            bonusMessage = "¡Nivel completado! ¡Eres un pensador crítico de élite! +200 Puntos Bonus 🎉"
+            console.log(`[Submit] ¡Nivel ${activity.nivel} completado! Otorgando 150 puntos adicionales (Total bonus: 200).`)
+          }
+        }
       }
     }
 
@@ -120,7 +145,7 @@ export default defineEventHandler(async (event) => {
             studentProfileId,
             activityId,
             respuesta,
-            puntajeObtenido: evaluation.scoreDetails.totalGained,
+            puntajeObtenido: evaluation.scoreDetails.totalGained + bonusPointsAwarded,
             tiempoSegundos,
             confianzaPrevia,
             feedbackRecibido: evaluation as any
@@ -129,6 +154,8 @@ export default defineEventHandler(async (event) => {
 
         // B. Actualizar progreso de subfase
         if (isFirstSuccess && activity.subPhase) {
+          const pointsToAdd = evaluation.scoreDetails.totalGained + bonusPointsAwarded
+
           await tx.progress.upsert({
             where: {
               studentProfileId_level_phase_subPhase: { 
@@ -139,7 +166,7 @@ export default defineEventHandler(async (event) => {
               }
             },
             update: {
-              accumulatedScore: { increment: evaluation.scoreDetails.totalGained },
+              accumulatedScore: { increment: pointsToAdd },
               percentCompleted: progressPercent
             },
             create: {
@@ -147,7 +174,7 @@ export default defineEventHandler(async (event) => {
               level: activity.nivel,
               phase: activity.fase,
               subPhase: activity.subPhase,
-              accumulatedScore: evaluation.scoreDetails.totalGained,
+              accumulatedScore: pointsToAdd,
               percentCompleted: progressPercent
             }
           })
@@ -155,7 +182,7 @@ export default defineEventHandler(async (event) => {
           await tx.studentProfile.update({
             where: { id: studentProfileId },
             data: {
-              totalPoints: { increment: evaluation.scoreDetails.totalGained },
+              totalPoints: { increment: pointsToAdd },
               lastActivityAt: new Date()
             }
           })
@@ -173,46 +200,45 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    // 6. Verificar Insignias
-    const newBadges = await checkAndAwardBadges(studentProfileId, evaluation)
+    // 6. Verificar Insignias (con contexto de fase/nivel completado)
+    const isLevelCompleteContext = activity.subPhase === '3.2' && bonusPointsAwarded >= 150
+    const newBadges = await checkAndAwardBadges(studentProfileId, evaluation, {
+      isPhaseComplete: bonusPointsAwarded > 0 || !!subPhaseUnlocked === false && bonusMessage !== null,
+      completedPhase: (bonusPointsAwarded > 0 && !isLevelCompleteContext) ? activity.fase : undefined,
+      isLevelComplete: isLevelCompleteContext,
+      completedLevel: isLevelCompleteContext ? activity.nivel : undefined,
+      isReinforcement: false // TODO: detectar si era actividad de refuerzo desde el body
+    })
 
-    // 7. Calcular barras de progreso actualizadas para el frontend
-    const [phaseCompleted, phaseTotal, levelCompleted, levelTotal] = await Promise.all([
-      // Completadas en esta fase (todas las subfases)
-      prisma.activityAttempt.count({
-        where: {
-          studentProfileId,
-          puntajeObtenido: { gte: 10 },
-          activity: { fase: activity.fase, nivel: activity.nivel }
+    // 7. Calcular barras de progreso actualizadas para el frontend (usando datos en memoria)
+    // Añadimos la actividad actual a la lista de exitosas si fue su primer éxito
+    if (isFirstSuccess) {
+      successfulAttempts.push({
+        activityId,
+        activity: {
+          fase: activity.fase,
+          nivel: activity.nivel,
+          subPhase: activity.subPhase
         }
-      }),
-      // Total en esta fase
-      prisma.activity.count({
-        where: { fase: activity.fase, nivel: activity.nivel, isPublished: true }
-      }),
-      // Completadas en el nivel completo
-      prisma.activityAttempt.count({
-        where: {
-          studentProfileId,
-          puntajeObtenido: { gte: 10 },
-          activity: { nivel: activity.nivel }
-        }
-      }),
-      // Total en el nivel
-      prisma.activity.count({
-        where: { nivel: activity.nivel, isPublished: true }
-      }),
-    ])
+      })
+    }
+
+    // Filtrar localmente usando los intentos exitosos únicos
+    const phaseCompleted = successfulAttempts.filter(
+      a => a.activity.fase === activity.fase && a.activity.nivel === activity.nivel
+    ).length
+
+    const levelCompleted = successfulAttempts.filter(
+      a => a.activity.nivel === activity.nivel
+    ).length
 
     // Progreso de la actividad dentro de la subfase actual
     const subPhaseConfig = activity.subPhase ? SUBPHASE_CONFIG[activity.subPhase] : null
-    const subPhaseCompleted = await prisma.activityAttempt.count({
-      where: {
-        studentProfileId,
-        puntajeObtenido: { gte: 10 },
-        activity: { fase: activity.fase, nivel: activity.nivel, subPhase: activity.subPhase }
-      }
-    })
+    const subPhaseCompleted = successfulAttempts.filter(
+      a => a.activity.fase === activity.fase &&
+           a.activity.nivel === activity.nivel &&
+           a.activity.subPhase === activity.subPhase
+    ).length
 
     const activityProgressBar = subPhaseConfig 
       ? Math.min(Math.round((subPhaseCompleted / subPhaseConfig.totalActivities) * 100), 100)
@@ -226,7 +252,9 @@ export default defineEventHandler(async (event) => {
         ...evaluation,
         scoreDetails: {
           ...evaluation.scoreDetails,
-          totalGained: isFirstSuccess ? evaluation.scoreDetails.totalGained : 0
+          totalGained: isFirstSuccess ? (evaluation.scoreDetails.totalGained + bonusPointsAwarded) : 0,
+          bonusPoints: bonusPointsAwarded,
+          bonusMessage: bonusMessage
         },
         attemptId: result.attempt.id,
         newBadges,

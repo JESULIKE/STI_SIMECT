@@ -58,6 +58,32 @@ async function main() {
   })
   console.log(`- Estudiante: Email: ${studentUser.email} / Code: ${studentUser.code} / Pass: Jesu123`)
 
+  // 3. Sembrar las 14 insignias oficiales (Sección 9.3)
+  const badges = [
+    { nombre: 'Primer Paso',            descripcion: 'Has comenzado tu viaje de pensamiento crítico. ¡Este es el primer paso hacia la conciencia ambiental!', icono: '🌱', condiciones: { type: 'FIRST_ACTIVITY' } },
+    { nombre: 'Analista',               descripcion: 'Dominas el análisis de información. Has demostrado capacidad para identificar hechos relevantes y separar datos de opiniones.', icono: '🔍', condiciones: { type: 'PHASE_COMPLETE', phase: 'ANALYSIS' } },
+    { nombre: 'Evaluador Crítico',      descripcion: 'Tu capacidad de evaluar información es sobresaliente. Puedes determinar la credibilidad de las fuentes con precisión.', icono: '⚖️', condiciones: { type: 'PHASE_COMPLETE', phase: 'EVALUATION' } },
+    { nombre: 'Juez Razonado',          descripcion: 'Formulas juicios argumentados con excelencia. Tu pensamiento crítico está plenamente desarrollado.', icono: '📝', condiciones: { type: 'PHASE_COMPLETE', phase: 'JUDGMENT' } },
+    { nombre: 'Guardián del Bosque',    descripcion: 'Has dominado el pensamiento básico sobre la deforestación y las inundaciones. ¡Eres un guardián de los ecosistemas!', icono: '🌲', condiciones: { type: 'LEVEL_COMPLETE', level: 'BASIC' } },
+    { nombre: 'Defensor del Ecosistema', descripcion: 'Tu pensamiento crítico de nivel intermedio te permite analizar complejos problemas ambientales. ¡Eres un verdadero defensor!', icono: '🌿', condiciones: { type: 'LEVEL_COMPLETE', level: 'INTERMEDIATE' } },
+    { nombre: 'Héroe Ambiental',        descripcion: '¡Has alcanzado el dominio completo del pensamiento crítico ambiental! Eres un héroe de la conciencia ecológica de Montería.', icono: '🦸', condiciones: { type: 'LEVEL_COMPLETE', level: 'ADVANCED' } },
+    { nombre: 'Mente Reflexiva',        descripcion: 'La práctica constante de la metacognición te ha convertido en un pensador más consciente de sus propios procesos mentales.', icono: '🧘', condiciones: { type: 'REFLECTIONS_COUNT', count: 10 } },
+    { nombre: 'Constante',              descripcion: 'La disciplina y regularidad son tus fortalezas. Mantuviste 3 días consecutivos de práctica.', icono: '🔥', condiciones: { type: 'STREAK', days: 3 } },
+    { nombre: 'Dedicado',               descripcion: 'Tu compromiso sostenido con el aprendizaje es admirable. ¡7 días consecutivos de práctica intelectual!', icono: '💎', condiciones: { type: 'STREAK', days: 7 } },
+    { nombre: 'Perfección',             descripcion: 'Obtuviste el máximo desempeño posible en una actividad. ¡El análisis perfecto es una habilidad excepcional!', icono: '⭐', condiciones: { type: 'PERFECT_SCORE' } },
+    { nombre: 'Mente Ágil',             descripcion: 'Tu velocidad combinada con precisión es impresionante. Completaste 5 actividades en menos de 90 segundos con más del 85% de acierto.', icono: '⚡', condiciones: { type: 'SPEED_ACCURACY', count: 5, maxSeconds: 90, minScore: 85 } },
+    { nombre: 'Persistente',            descripcion: 'Superaste una actividad de refuerzo en tu primer intento. ¡La resiliencia cognitiva es tu poder!', icono: '💪', condiciones: { type: 'REINFORCEMENT_FIRST_TRY', minScore: 80 } },
+    { nombre: 'Autoconocimiento',       descripcion: 'Tu calibración metacognitiva precisa y consistente demuestra un alto nivel de autoconocimiento intelectual.', icono: '🪞', condiciones: { type: 'PRECISE_CALIBRATION', count: 5 } },
+  ]
+
+  for (const badge of badges) {
+    await prisma.badge.upsert({
+      where: { nombre: badge.nombre },
+      update: { descripcion: badge.descripcion, icono: badge.icono, condiciones: badge.condiciones },
+      create: badge
+    })
+  }
+  console.log(`- ${badges.length} insignias oficiales sembradas`)
 
   // 3. Crear Primera Actividad: AN_1.1_B1 (Básico)
   await prisma.activity.create({

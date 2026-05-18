@@ -9,21 +9,26 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, statusMessage: 'Cuerpo vacío' })
     }
 
-    let { name, email, password, role, studentCode } = body
+    let { name, email, password, role, studentCode, institucion } = body
 
-    if (!password || !name || (!email && !studentCode)) {
+    if (!password || !name) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Nombre, contraseña y un identificador (email o código) son obligatorios',
+        statusMessage: 'Nombre y contraseña son obligatorios',
       })
     }
 
     // Normalización de Datos
     if (email) email = email.trim().toLowerCase()
     
-    if (studentCode) {
+    // Auto-generar código si no se proporciona (lo normal ahora)
+    const assignedRole = (role || 'STUDENT') as Role
+    if (!studentCode) {
+      const count = await prisma.user.count({ where: { role: assignedRole } })
+      const prefix = assignedRole === 'STUDENT' ? 'EST-' : 'DOC-'
+      studentCode = `${prefix}${String(count + 1).padStart(3, '0')}`
+    } else {
       studentCode = studentCode.trim()
-      // Si el código parece institucional (EST-xxx o DOC-xxx), forzar mayúsculas
       if (studentCode.toLowerCase().startsWith('est-') || studentCode.toLowerCase().startsWith('doc-')) {
         studentCode = studentCode.toUpperCase()
       }
@@ -32,7 +37,7 @@ export default defineEventHandler(async (event) => {
     // Si no hay email, generar uno basado en el código
     const finalEmail = email || `${studentCode.toLowerCase()}@simect.edu.co`
 
-    // 1. Verificar si el email o el código ya existen (Usando normalizados)
+    // 1. Verificar si el email o el código ya existen
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
@@ -55,12 +60,14 @@ export default defineEventHandler(async (event) => {
       data: {
         name,
         email: finalEmail,
-        code: studentCode || finalEmail,
+        code: studentCode,
         password: hashedPassword,
-        role: (role || 'STUDENT') as Role,
-        studentProfile: role === 'STUDENT' ? {
+        role: assignedRole,
+        institucion: institucion || null, // Se guarda para todos los roles
+        studentProfile: assignedRole === 'STUDENT' ? {
           create: {
             codigoEstudiantil: studentCode,
+            institucion: institucion || null,
             totalPoints: 0,
             currentStreak: 0
           }
@@ -78,7 +85,8 @@ export default defineEventHandler(async (event) => {
       studentProfileId: user.studentProfile?.id || null,
       studentCode: studentCode || finalEmail,
       name: user.name,
-      role: user.role
+      role: user.role,
+      institucion: user.institucion || null
     }
 
     // Auto-login después del registro

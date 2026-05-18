@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '~/server/utils/prisma'
 
 const ACTIVITIES_PER_SUBPHASE = 6
 

@@ -87,9 +87,10 @@ export default defineEventHandler(async (event) => {
     const sessionUser = {
       id: dbUser.id,
       studentProfileId: dbUser.studentProfile?.id || null,
-      studentCode: studentCode,
+      studentCode: dbUser.code,
       name: dbUser.name,
-      role: dbUser.role
+      role: dbUser.role,
+      institucion: dbUser.institucion || null
     }
 
 

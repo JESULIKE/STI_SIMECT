@@ -59,12 +59,14 @@ export function useLearningSession() {
 
       const list = response.data || []
       console.log(`Respuesta del servidor: ${list.length} actividades encontradas.`)
+
+      if (response.progressBars) {
+        studentStore.updateProgressBars(response.progressBars)
+      }
       
-      if (list.length > 0) {
-        const activityId = list[0].id
-        console.log('Cargando detalles de actividad ID:', activityId)
-        const fullActivityResponse = await $fetch(`/api/activities/${activityId}`)
-        currentActivityData.value = (fullActivityResponse as any).data
+      if (response.firstActivity) {
+        console.log('Actividad cargada desde metadata:', response.firstActivity.id)
+        currentActivityData.value = response.firstActivity
         activityManager.resetTimer()
         console.log('Actividad lista:', currentActivityData.value.titulo)
       } else {

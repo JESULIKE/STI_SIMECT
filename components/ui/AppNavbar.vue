@@ -28,7 +28,18 @@
       <div class="mx-1 h-6 w-px bg-surface-200" aria-hidden="true" />
 
       <!-- Avatar si hay sesión -->
-      <div v-if="loggedIn" class="flex items-center gap-2">
+      <div v-if="loggedIn" class="flex items-center gap-3">
+        
+        <!-- Código del Estudiante/Docente -->
+        <div 
+          v-if="user?.studentCode" 
+          class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg shadow-sm"
+          title="Tu código de acceso"
+        >
+          <span class="text-[10px] font-black uppercase text-blue-500 tracking-widest">CÓDIGO:</span>
+          <span class="text-sm font-mono font-bold text-blue-900">{{ user.studentCode }}</span>
+        </div>
+
         <button
           id="user-menu-btn"
           class="flex h-9 w-9 items-center justify-center rounded-xl

@@ -53,6 +53,18 @@ const studentAnswer = ref<any>({})
 const showHint = ref(false)
 const activeHint = ref('')
 
+// Cola de insignias para mostrar una por una
+const pendingBadges = ref<any[]>([])
+const currentBadge = computed(() => pendingBadges.value[0] || null)
+const dismissBadge = () => { pendingBadges.value.shift() }
+
+// Escuchar cuando llegan insignias desde el resultado de la sesión
+watch(() => lastEvaluation.value, (evaluation) => {
+  if (evaluation?.newBadges?.length) {
+    pendingBadges.value.push(...evaluation.newBadges)
+  }
+})
+
 const handleRequestHelp = () => {
   // Tomar la pista del material de apoyo o usar una genérica pedagógica
   const manualHint = currentActivityData.value?.materialApoyo?.pista || 
@@ -89,11 +101,11 @@ watch(currentActivityData, () => {
       @complete="finishNarrative" 
     />
 
-    <!-- Toasts flotantes de Insignias -->
-    <BadgeUnlocked 
-      v-for="badge in studentStore.progress.earnedBadges" 
-      :key="'toast-'+badge" 
-      :badgeId="badge" 
+    <!-- Modal de Nueva Insignia (una por una) -->
+    <BadgeUnlocked
+      v-if="currentBadge"
+      :badge="currentBadge"
+      @close="dismissBadge"
     />
 
     <!-- Animación de puntos voladores -->

@@ -58,7 +58,12 @@ export function calculateBaseScore(activity: any, respuesta: any): number {
  */
 export function evaluateActivity(activity: any, respuesta: any, context: { priorConfidence: number, timeSeconds: number, student?: StudentModel }) {
   // 1. Calcular Desempeño Base
-  const baseScore = calculateBaseScore(activity, respuesta)
+  let baseScore = calculateBaseScore(activity, respuesta)
+  
+  // Escalar por puntajeMaximo si es menor a 100 (ej. Actividad de Refuerzo de 40-70 puntos)
+  if (activity.puntajeMaximo && activity.puntajeMaximo < 100) {
+    baseScore = Math.round((baseScore * activity.puntajeMaximo) / 100)
+  }
   
   // 1.5 Extraer justificación específica del contenido si existe (MULTIPLE_CHOICE)
   let specificJustification = ''

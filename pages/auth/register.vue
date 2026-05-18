@@ -24,7 +24,7 @@ const selectedRole = ref('STUDENT')
 const form = reactive({
   name: '',
   email: '',
-  studentCode: '',
+  institucion: '',
   password: '',
   confirmPassword: '',
   acceptedConsent: false
@@ -33,13 +33,29 @@ const form = reactive({
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
+const colegios = [
+  "Institución Educativa Cristóbal colon",
+  "Institución educativa Liceo Guillermo Valencia",
+  "institución educativa inem Lorenzo María Lleras",
+  "Institución Educativa Rancho grande",
+  "Institución Policarpa salavarrieta",
+  "Institución Educativa Antonia Santos",
+  "Institución Educativa Juan XXIII",
+  "Institución educativa José María Córdoba",
+  "Mega colegio el Dorado",
+  "Institución educativa Santa María Goretti",
+  "Institución educativa Mercedes Ábrego",
+  "Institución educativa Cecilia de lleras",
+  "Institucion Educativa Santa Rosa De Lima"
+]
+
 const isFormValid = computed(() => {
   const common = form.name.length > 0 && 
                  form.password.length >= 6 && 
                  form.password === form.confirmPassword &&
-                 form.acceptedConsent
-  
-  return common && form.studentCode.length >= 4
+                 form.acceptedConsent &&
+                 form.institucion.length > 0
+  return common
 })
 
 const handleRegister = async () => {
@@ -48,18 +64,21 @@ const handleRegister = async () => {
   error.value = null
 
   try {
-    const finalEmail = form.email || `${form.studentCode.toLowerCase()}@simect.edu.co`
+    const finalEmail = form.email || undefined
 
-    await $fetch('/api/auth/register', {
+    const response = await $fetch('/api/auth/register', {
       method: 'POST',
       body: {
         name: form.name,
         email: finalEmail,
         password: form.password,
         role: selectedRole.value,
-        studentCode: form.studentCode
+        institucion: form.institucion
       }
     })
+
+    // Mostrar el código al usuario inmediatamente antes de redirigir
+    window.alert(`¡Registro exitoso!\n\nTu código de acceso es: ${response.user.studentCode}\n\nPor favor, anótalo y guárdalo en un lugar seguro, lo necesitarás siempre para iniciar sesión.`)
 
     await refreshSession()
     
@@ -194,15 +213,24 @@ const floatingEmojis = [
 
             <div class="space-y-2">
               <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-blue-900 px-2">
-                {{ selectedRole === 'STUDENT' ? 'Código Estudiantil' : 'Código Docente' }}
+                Institución Educativa
               </label>
-              <input 
-                v-model="form.studentCode"
-                type="text" 
-                required
-                :placeholder="selectedRole === 'STUDENT' ? 'Ej: EST-001' : 'Ej: DOC-001'"
-                class="w-full px-5 py-4 bg-blue-50 border-2 border-blue-200 rounded-2xl text-blue-900 placeholder:text-blue-300 focus:border-blue-500 focus:outline-none transition-all font-mono tracking-widest text-sm"
-              >
+              <div class="relative">
+                <select 
+                  v-model="form.institucion"
+                  required
+                  class="w-full px-5 py-4 bg-blue-50 border-2 border-blue-200 rounded-2xl text-blue-900 focus:border-blue-500 focus:outline-none transition-all text-sm appearance-none cursor-pointer"
+                  :class="{ 'text-blue-300': !form.institucion }"
+                >
+                  <option value="" disabled selected>Selecciona tu colegio</option>
+                  <option v-for="colegio in colegios" :key="colegio" :value="colegio">
+                    {{ colegio }}
+                  </option>
+                </select>
+                <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                  <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -264,7 +292,7 @@ const floatingEmojis = [
             <!-- Ayuda de Validación -->
             <div v-if="!isFormValid && !isLoading" class="text-center space-y-1 py-1">
                <p v-if="form.name.length === 0" class="text-[9px] text-blue-700 uppercase font-bold">* Falta ingresar tu nombre</p>
-               <p v-if="form.studentCode.length < 4" class="text-[9px] text-blue-700 uppercase font-bold">* El código debe tener al menos 4 caracteres</p>
+               <p v-if="!form.institucion" class="text-[9px] text-blue-700 uppercase font-bold">* Selecciona tu institución educativa</p>
                <p v-if="form.password.length < 6" class="text-[9px] text-blue-700 uppercase font-bold">* La contraseña debe tener al menos 6 caracteres</p>
                <p v-if="form.password !== form.confirmPassword && form.confirmPassword.length > 0" class="text-[9px] text-orange-500 uppercase font-bold">* Las contraseñas no coinciden</p>
                <p v-if="!form.acceptedConsent" class="text-[9px] text-purple-600 uppercase font-bold">* Debes aceptar el consentimiento de datos</p>

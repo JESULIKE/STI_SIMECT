@@ -33,7 +33,7 @@ export default defineNuxtConfig({
           name: 'description',
           content: 'Plataforma educativa para el desarrollo del pensamiento crítico y metacognición en estudiantes de grado 8° y 9° de Montería.',
         },
-        { name: 'theme-color', content: '#166534' },
+        { name: 'theme-color', content: '#D7EEFA' },
       ],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -42,6 +42,9 @@ export default defineNuxtConfig({
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
         },
+        { rel: 'icon', type: 'image/png', href: '/Logo.png' },
+        { rel: 'shortcut icon', href: '/Logo.png' },
+        { rel: 'apple-touch-icon', href: '/Logo.png' },
       ],
     },
   },

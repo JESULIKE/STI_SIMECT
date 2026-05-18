@@ -14,15 +14,15 @@
   --color-slate-300: #6b9fd4;
   --color-slate-200: #a8d1f5;
   --color-slate-100: #d4ebfa;
-  --color-slate-50:  #BADDFF;
-  --color-surface-50: #BADDFF;
+  --color-slate-50:  #D7EEFA;
+  --color-surface-50: #D7EEFA;
   --color-white: #ffffff;
 }
 
 @layer base {
   html {
     @apply antialiased;
-    background-color: #BADDFF !important;
+    background-color: #D7EEFA !important;
     color: #000000 !important;
     transition: background-color 0.3s ease;
   }
