@@ -12,7 +12,10 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
 
   try {
-    const textCombined = `${body.queAprendi || ''} ${body.queFueDificil || ''} ${body.transferencia || ''} ${body.queHariaDiferente || ''}`.trim()
+    const queAprendiResumen = `Claridad: ${body.clarity}/5 | Hechos/Opiniones: ${body.factsOpinions}/5 | Datos Concretos: ${body.concreteData}/5 | Estrategia: ${body.followedStrategy}/5`
+    const autoEvalAvg = Math.round((body.clarity + body.factsOpinions + body.concreteData + body.followedStrategy) / 4)
+
+    const textCombined = `${queAprendiResumen} ${body.difficult || ''} ${body.transfer || ''} ${body.differentNext || ''}`.trim()
     const isSubstantial = textCombined.length >= 40
     let pointsAwarded = 0
 
@@ -21,11 +24,11 @@ export default defineEventHandler(async (event) => {
         data: {
           studentProfileId,
           activityAttemptId: body.activityAttemptId,
-          queAprendi: body.queAprendi,
-          queFueDificil: body.queFueDificil,
-          autoEvaluacion: body.autoEvaluacion,
-          transferencia: body.transferencia,
-          queHariaDiferente: body.queHariaDiferente
+          queAprendi: queAprendiResumen,
+          queFueDificil: body.difficult,
+          autoEvaluacion: autoEvalAvg,
+          transferencia: body.transfer,
+          queHariaDiferente: body.differentNext
         }
       })
 

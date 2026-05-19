@@ -26,7 +26,7 @@ async function main() {
   const teacherUser = await prisma.user.create({
     data: {
       email: 'jesus@simect.com',
-      code: 'DOC-001',
+      code: 'DOC-000',
       name: 'Jesus Gonzalez',
       password: commonPassword,
       role: Role.TEACHER,
@@ -39,13 +39,13 @@ async function main() {
   const studentUser = await prisma.user.create({
     data: {
       email: 'jesus.estudiante@simect.com',
-      code: 'EST-001',
+      code: 'EST-000',
       name: 'Jesus Estudiante',
       password: commonPassword,
       role: Role.STUDENT,
       studentProfile: {
         create: {
-          codigoEstudiantil: 'EST-001',
+          codigoEstudiantil: 'EST-000',
           institucion: 'Colegio Experimental SIMECT',
           totalPoints: 0,
           currentStreak: 0
@@ -337,99 +337,759 @@ async function main() {
     }
   })
 
-  // 9. Actividad B3 (Básico)
+  // 9. Actividad: AN_1.2_B1 (Básico)
   await prisma.activity.create({
     data: {
-      titulo: 'Registro de Temperatura',
-      descripcion: 'Identifica los valores térmicos del reporte.',
+      titulo: 'Identificación de Acción',
+      descripcion: 'Identifica la propuesta principal o curso de acción defendido en el texto.',
       fase: Phase.ANALYSIS,
-      subPhase: '1.1',
+      subPhase: '1.2',
       nivel: Level.BASIC,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       puntajeMaximo: 100,
       contenido: {
-        texto: '"La temperatura en el Valle del Sinú alcanzó los 38°C a las 2 p.m."',
-        pregunta: '¿Cuál es el valor numérico de la temperatura reportada?',
+        texto: '"Debemos evacuar el barrio para proteger a los niños y ancianos."',
+        pregunta: 'Identifica la propuesta o acción principal sugerida:',
         opciones: [
-          { id: 'a', texto: '38°C', justa: '¡Excelente! Identificaste el dato preciso con su unidad térmica.' },
-          { id: 'b', texto: '2 p.m.', justa: 'Esa es la hora del registro, no el valor de la temperatura.' },
-          { id: 'c', texto: '38', justa: 'La cifra es correcta, pero recuerda que en ciencia la unidad (°C) es vital.' },
-          { id: 'd', texto: 'Calor extremo', justa: 'Busca el dato técnico numérico, no una descripción del clima.' }
+          { 
+            id: 'a', 
+            texto: 'Evacuar el barrio', 
+            justa: '¡Muy bien! Identificaste la acción principal del mensaje. Estás reconociendo propuestas concretas.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Proteger casas', 
+            justa: 'Esa idea aparece relacionada, pero revisa cuál es la acción específica sugerida.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Ayudar vecinos', 
+            justa: 'Piensa cuál es la medida inmediata planteada en el texto.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Esperar instrucciones', 
+            justa: 'La propuesta implica actuar, no esperar.' 
+          }
         ]
       },
-      claveRespuestas: { correcta: 'a' }
+      claveRespuestas: {
+        correcta: 'a'
+      }
     }
   })
 
-  // 10. Actividad B4 (Básico)
+  // 10. Actividad: AN_1.2_B2 (Básico)
   await prisma.activity.create({
     data: {
-      titulo: 'Nivel de Alerta',
-      descripcion: 'Identifica la gravedad de la situación reportada.',
+      titulo: 'Población Prioritaria',
+      descripcion: 'Analiza el propósito de protección en las acciones propuestas.',
       fase: Phase.ANALYSIS,
-      subPhase: '1.1',
+      subPhase: '1.2',
       nivel: Level.BASIC,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       puntajeMaximo: 100,
       contenido: {
-        texto: '"El IDEAM mantiene la alerta roja por incendios en el Caribe."',
-        pregunta: '¿Qué tipo de alerta menciona el reporte?',
+        texto: '"Debemos evacuar para proteger a niños y ancianos prioritariamente."',
+        pregunta: '¿A quiénes se busca proteger principalmente según el texto?',
         opciones: [
-          { id: 'a', justa: '¡Correcto! Identificaste el código de color de la alerta máxima.', texto: 'Roja' },
-          { id: 'b', justa: 'Revisa el texto, el reporte menciona una alerta más crítica.', texto: 'Amarilla' },
-          { id: 'c', justa: 'Ese es el fenómeno (incendios), pero la pregunta pide el tipo de alerta.', texto: 'Incendios' },
-          { id: 'd', justa: 'Busca el color específico que define la alerta en el boletín.', texto: 'Informativa' }
+          { 
+            id: 'a', 
+            texto: 'Niños y ancianos', 
+            justa: '¡Excelente! Identificaste la población prioritaria.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Toda la comunidad', 
+            justa: 'La comunidad puede verse afectada, pero revisa quiénes se mencionan específicamente. Observa cuidadosamente los grupos nombrados en el mensaje.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Adultos', 
+            justa: 'Observa cuidadosamente los grupos nombrados en el mensaje.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'autoridades', 
+            justa: 'Las autoridades coordinan la acción, pero no son la población vulnerable a proteger mencionada en el texto.' 
+          }
         ]
       },
-      claveRespuestas: { correcta: 'a' }
+      claveRespuestas: {
+        correcta: 'a'
+      }
     }
   })
 
-  // 11. Actividad B5 (Básico)
+  // 11. Actividad: AN_1.2_M1 (Medio)
   await prisma.activity.create({
     data: {
-      titulo: 'Velocidad del Viento',
-      descripcion: 'Extrae datos de movimiento atmosférico.',
+      titulo: 'Opción Defendida',
+      descripcion: 'Identifica la solución o postura principal que defiende el autor.',
       fase: Phase.ANALYSIS,
-      subPhase: '1.1',
-      nivel: Level.BASIC,
+      subPhase: '1.2',
+      nivel: Level.INTERMEDIATE,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       puntajeMaximo: 100,
       contenido: {
-        texto: '"Se registran vientos de 25 km/h con ráfagas ocasionales."',
-        pregunta: 'Identifica la velocidad de los vientos reportada:',
+        texto: '"Poner costales de arena es mejor que salir, porque así cuidamos las casas."',
+        pregunta: 'Identifica la opción o solución defendida por el autor:',
         opciones: [
-          { id: 'a', justa: '¡Muy bien! Capturaste la velocidad exacta del viento.', texto: '25 km/h' },
-          { id: 'b', justa: 'Ese término describe ráfagas, pero no da el valor de la velocidad constante.', texto: 'Ráfagas' },
-          { id: 'c', justa: 'La cifra es correcta, pero falta la unidad de medida (km/h).', texto: '25' },
-          { id: 'd', justa: 'Revisa nuevamente el valor numérico en el reporte.', texto: '50 km/h' }
+          { 
+            id: 'a', 
+            texto: 'Poner costales', 
+            justa: '¡Correcto! Reconociste la solución defendida.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Evacuar', 
+            justa: 'La evacuación es otra alternativa, pero revisa cuál apoya el autor.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Esperar ayuda', 
+            justa: 'El texto propone una acción inmediata, no esperar.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Ignorar la situación', 
+            justa: 'El autor sí plantea una medida para actuar frente al problema.' 
+          }
         ]
       },
-      claveRespuestas: { correcta: 'a' }
+      claveRespuestas: {
+        correcta: 'a'
+      }
     }
   })
 
-  // 12. Actividad B6 (Básico)
+  // 12. Actividad: AN_1.2_M2 (Medio)
   await prisma.activity.create({
     data: {
-      titulo: 'Humedad Relativa',
-      descripcion: 'Identifica la cantidad de vapor de agua en el aire.',
+      titulo: 'Argumento Justificativo',
+      descripcion: 'Identifica la razón o argumento que da peso a la opción elegida.',
       fase: Phase.ANALYSIS,
-      subPhase: '1.1',
+      subPhase: '1.2',
+      nivel: Level.INTERMEDIATE,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Poner costales es mejor para evitar que el agua dañe los muebles."',
+        pregunta: '¿Cuál es la razón (argumento) que justifica la opción elegida?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Cuidar los bienes', 
+            justa: '¡Muy bien! Identificaste el argumento principal.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Salvar vidas', 
+            justa: 'Ese sería otro objetivo importante, pero revisa qué justificación menciona el texto.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Evitar evacuación', 
+            justa: 'Piensa cuál es la razón directa relacionada con los muebles y las casas.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Seguir instrucciones', 
+            justa: 'El argumento se relaciona con proteger pertenencias materiales.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 13. Actividad: AN_1.2_A1 (Alto)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Opción a Largo Plazo',
+      descripcion: 'Identifica soluciones sostenibles y preventivas en el tiempo.',
+      fase: Phase.ANALYSIS,
+      subPhase: '1.2',
+      nivel: Level.ADVANCED,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Reubicar familias es costoso hoy, pero evita tragedias cíclicas cada invierno."',
+        pregunta: 'Identifica la opción de largo plazo mencionada en el texto:',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Reubicar familias', 
+            justa: '¡Excelente análisis! Identificaste una solución preventiva de largo plazo.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Evitar el invierno', 
+            justa: 'El clima no se puede evitar; piensa en la opción de infraestructura propuesta.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Incurrir en costos', 
+            justa: 'Ese es un obstáculo financiero a corto plazo, no la propuesta preventiva a largo plazo.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Tragedias cíclicas', 
+            justa: 'Ese es el problema recurrentemente que se busca prevenir, no la opción sugerida.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 14. Actividad: AN_1.2_A2 (Alto)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Desventaja de Largo Plazo',
+      descripcion: 'Evalúa las dificultades y argumentos en contra en las propuestas complejas.',
+      fase: Phase.ANALYSIS,
+      subPhase: '1.2',
+      nivel: Level.ADVANCED,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Reubicar familias implica una inversión muy alta en este momento."',
+        pregunta: '¿Cuál es el argumento en contra (desventaja) mencionado?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Es costoso hoy', 
+            justa: '¡Correcto! Reconociste la desventaja planteada.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Económico', 
+            justa: 'Tu respuesta se relaciona con dinero, pero revisa cómo aparece expresado el argumento.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Altamente costoso', 
+            justa: 'Vas cerca. Busca la expresión exacta mencionada en el texto.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Barato', 
+            justa: 'Revisa nuevamente: el texto presenta una dificultad económica, no una ventaja.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 15. Actividad: EV_2.1_B1 (Básico)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Firma Institucional',
+      descripcion: 'Identifica qué fuentes poseen respaldo formal y responsable.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.1',
       nivel: Level.BASIC,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       puntajeMaximo: 100,
       contenido: {
-        texto: '"La humedad relativa en Montería se sitúa en el 85%."',
-        pregunta: '¿Cuál es el porcentaje de humedad mencionado?',
+        texto: '"Audio WhatsApp: \'Se rompió la represa\'. Boletín Alcaldía: \'Estable\'."',
+        pregunta: '¿Cuál fuente tiene una firma institucional y responsable?',
         opciones: [
-          { id: 'a', justa: '¡Exacto! El 85% es el valor de humedad reportado.', texto: '85%' },
-          { id: 'b', justa: 'Ese es el nombre del indicador, no su valor.', texto: 'Humedad' },
-          { id: 'c', justa: 'Revisa el número exacto que acompaña al símbolo de porcentaje.', texto: '100%' },
-          { id: 'd', justa: 'Busca el valor numérico específico en el texto.', texto: 'Alta' }
+          { 
+            id: 'a', 
+            texto: 'Boletín oficial de la Alcaldía', 
+            justa: '¡Excelente! Identificaste la fuente con respaldo institucional. Estás aprendiendo a verificar información confiable.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Audio de WhatsApp', 
+            justa: 'El audio de WhatsApp no tiene firma institucional responsable y carece de verificación oficial.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Entidad gubernamental', 
+            justa: 'Vas cerca, pero busca el tipo específico de fuente mencionado en el reporte.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Comunicado', 
+            justa: 'Revisa cuál opción representa un documento emitido oficialmente en el texto.' 
+          }
         ]
       },
-      claveRespuestas: { correcta: 'a' }
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 16. Actividad: EV_2.1_B2 (Básico)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Fuente sin Respaldo',
+      descripcion: 'Evalúa la veracidad de mensajes informales sin autoría.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.1',
+      nivel: Level.BASIC,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"WhatsApp anónimo vs Comunicado Oficial de Montería."',
+        pregunta: '¿Cuál de las dos fuentes es anónima y sin respaldo?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'WhatsApp', 
+            justa: '¡Correcto! Reconociste la fuente sin verificación oficial. Cada vez evalúas mejor la credibilidad.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Mensaje anónimo', 
+            justa: 'La idea es correcta, pero identifica específicamente la fuente mencionada.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Cadena de WhatsApp', 
+            justa: 'Vas por buen camino. Busca la opción más directa.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Chat sin autor', 
+            justa: 'Piensa en qué medio circulaba originalmente el mensaje.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 17. Actividad: EV_2.1_M1 (Medio)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Experto Técnico',
+      descripcion: 'Compara opiniones no calificadas contra reportes de especialistas.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.1',
+      nivel: Level.INTERMEDIATE,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Testimonio de un vecino afectado vs Informe de un ingeniero."',
+        pregunta: '¿Quién es el experto técnico capacitado en el tema?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Ingeniero', 
+            justa: '¡Muy bien! Identificaste al profesional con formación técnica. Estás diferenciando experiencia de conocimiento especializado.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Profesional técnico', 
+            justa: 'La idea es correcta, pero revisa qué profesión específica aparece en el texto.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Especialista', 
+            justa: 'Busca el cargo técnico exacto mencionado.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Vecino afectado', 
+            justa: 'Vivir la situación no necesariamente significa tener conocimientos técnicos.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 18. Actividad: EV_2.1_M2 (Medio)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Emociones vs Datos',
+      descripcion: 'Distingue juicios impulsados por la emoción de reportes fácticos.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.1',
+      nivel: Level.INTERMEDIATE,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Vecino: \'El agua subió por culpa de las obras\'. Ingeniero: \'Por lluvia\'."',
+        pregunta: '¿Cuál fuente se basa principalmente en la emoción del momento?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Vecino afectado', 
+            justa: '¡Correcto! Reconociste una opinión influenciada por la experiencia personal. Tu análisis crítico está mejorando.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Ingeniero', 
+            justa: 'El ingeniero basa su explicación en datos técnicos. Revisa quién habla desde la experiencia emocional.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Opinión', 
+            justa: 'La respuesta describe el tipo de mensaje, pero identifica quién lo expresa.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Persona afectada', 
+            justa: 'Vas cerca. Busca la opción exacta relacionada con el testimonio.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 19. Actividad: EV_2.1_A1 (Alto)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Interés Electoral',
+      descripcion: 'Evalúa sesgos motivados por intereses políticos en las laderas.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.1',
+      nivel: Level.ADVANCED,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Científico de la Universidad vs Candidato a la Alcaldía en barrio."',
+        pregunta: '¿Cuál fuente podría tener un interés electoral en su discurso?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Candidato', 
+            justa: '¡Excelente análisis! Detectaste un posible interés político. Estás evaluando intenciones detrás del discurso.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Político', 
+            justa: 'Tu respuesta se relaciona con el tema, pero revisa quién participa directamente en campaña.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Aspirante', 
+            justa: 'Vas bien. Busca el término exacto utilizado.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Campaña electoral', 
+            justa: 'La campaña es el contexto, pero identifica la persona involucrada.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 20. Actividad: EV_2.1_A2 (Alto)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Neutralidad Académica',
+      descripcion: 'Compara la objetividad universitaria contra discursos de proselitismo.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.1',
+      nivel: Level.ADVANCED,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Estudio hidrológico de un científico vs Discurso de político en zona afectada."',
+        pregunta: '¿Cuál de las fuentes ofrece mayor neutralidad académica?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Científico', 
+            justa: '¡Muy bien! Reconociste la fuente más objetiva y técnica. Estás fortaleciendo tu evaluación crítica.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Universidad', 
+            justa: 'La universidad respalda el estudio, pero revisa quién realiza directamente la investigación.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Estudio hidrológico', 
+            justa: 'El estudio contiene la información, pero identifica quién aporta la neutralidad académica.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Investigador', 
+            justa: 'Tu respuesta es cercana, pero busca el término exacto usado en el texto.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 21. Actividad: EV_2.2_B1 (Básico)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Causa y Efecto Simple',
+      descripcion: 'Identifica y evalúa relaciones lógicas básicas de causa y efecto.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.2',
+      nivel: Level.BASIC,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Llovió mucho en la parte alta, por eso el río se desbordó."',
+        pregunta: '¿La lluvia intensa explica lógicamente el desborde del río?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Sí', 
+            justa: '¡Correcto! Identificaste una relación lógica de causa y efecto. Estás comprendiendo conexiones entre fenómenos.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'No', 
+            justa: 'Piensa cómo el aumento de lluvia puede afectar el nivel del río.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Tal vez, depende del día', 
+            justa: 'La lógica física de causa-efecto se mantiene, la lluvia directa incrementa el caudal del río. Analiza con mayor rigurosidad.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'No hay relación alguna', 
+            justa: 'La lluvia y el caudal de los ríos están conectados directamente. Revisa los principios físicos elementales.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 22. Actividad: EV_2.2_B2 (Básico)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Identificar la Causa',
+      descripcion: 'Extrae la causa en argumentos de flujo simple.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.2',
+      nivel: Level.BASIC,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Lluvias intensas -> Inundación de calles."',
+        pregunta: 'Identifica la causa en este argumento simple.',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Lluvias intensas', 
+            justa: '¡Muy bien! Reconociste la causa principal del argumento. Estás identificando relaciones lógicas correctamente.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Fuertes lluvias', 
+            justa: 'Tu respuesta es cercana. Busca la expresión exacta presentada.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Precipitaciones intensas.', 
+            justa: 'La idea es correcta, pero revisa cómo aparece redactada en el texto.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Inundación de calles', 
+            justa: 'Ese es el efecto resultante (consecuencia), no la causa que lo origina.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 23. Actividad: EV_2.2_M1 (Medio)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Garantía Temporal',
+      descripcion: 'Evalúa la validez de proyecciones basadas únicamente en el pasado.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.2',
+      nivel: Level.INTERMEDIATE,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"En 2010 no se inundó mi casa, así que ahora tampoco pasará nada."',
+        pregunta: '¿El hecho de que no pasara antes asegura que no pasará hoy?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'No', 
+            justa: '¡Excelente! Reconociste que el pasado no garantiza el futuro. Tu razonamiento está siendo más crítico.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Sí', 
+            justa: 'Las condiciones pueden cambiar con el tiempo. Revisa si existe evidencia suficiente para estar seguro.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Es muy probable que sí', 
+            justa: 'El clima y la infraestructura urbana varían considerablemente. No te fíes de la inercia temporal.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Depende solo de la suerte', 
+            justa: 'El análisis de riesgo se basa en variables medibles, no en el azar. Busca una respuesta con mayor rigor crítico.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 24. Actividad: EV_2.2_M2 (Medio)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Falla Lógica y Confianza',
+      descripcion: 'Detecta el sesgo de falsa seguridad en razonamientos de autoprotección.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.2',
+      nivel: Level.INTERMEDIATE,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Mi casa es alta, nunca le llegará el agua."',
+        pregunta: '¿Cuál es la falla lógica: basarse en datos o en falsa seguridad?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Falsa seguridad', 
+            justa: '¡Correcto! Detectaste exceso de confianza en el razonamiento. Cada vez identificas mejor los errores lógicos.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Exceso de confianza', 
+            justa: 'Tu respuesta se relaciona con la idea correcta. Revisa cuál concepto engloba esa actitud.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Suposición sin evidencia', 
+            justa: 'La afirmación tiene poca evidencia, pero piensa especialmente en la confianza absoluta del hablante.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Basarse en datos históricos', 
+            justa: 'El argumento carece de datos o registros históricos objetivos de niveles de inundación.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 25. Actividad: EV_2.2_A1 (Alto)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Identificación de Conclusión',
+      descripcion: 'Extrae conclusiones explícitas en argumentos complejos de falsa correlación.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.2',
+      nivel: Level.ADVANCED,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Si no lloviera, no habría pobres; por tanto, la lluvia causa pobreza."',
+        pregunta: 'Identifica la conclusión final del argumento expuesto.',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'Lluvia causa pobreza', 
+            justa: '¡Excelente análisis! Identificaste la conclusión principal del argumento. Estás comprendiendo estructuras argumentativas complejas.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'La pobreza fue causada por la lluvia', 
+            justa: 'Tu respuesta es cercana, pero revisa la conclusión exacta planteada.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'La lluvia es mala para la economía', 
+            justa: 'El texto no menciona la economía en general, busca la afirmación conclusiva literal.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Si llueve, las personas se empobrecen', 
+            justa: 'Revisa la estructura sintáctica exacta del argumento presentado para dar con la conclusión formal.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
+    }
+  })
+
+  // 26. Actividad: EV_2.2_A2 (Alto)
+  await prisma.activity.create({
+    data: {
+      titulo: 'Causalidad vs Correlación',
+      descripcion: 'Evalúa la validez real de nexos causales en argumentos complejos.',
+      fase: Phase.EVALUATION,
+      subPhase: '2.2',
+      nivel: Level.ADVANCED,
+      tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
+      puntajeMaximo: 100,
+      contenido: {
+        texto: '"Lluvia -> Pobreza."',
+        pregunta: '¿Existe una conexión real y directa de causa entre estos dos?',
+        opciones: [
+          { 
+            id: 'a', 
+            texto: 'No, es una correlación falsa', 
+            justa: '¡Excelente razonamiento! Identificaste que asociar lluvia directamente como causa de la pobreza es una falacia (causa falsa / cum hoc ergo propter hoc). Estás demostrando un pensamiento crítico y analítico excepcional.' 
+          },
+          { 
+            id: 'b', 
+            texto: 'Sí, es una relación causal directa', 
+            justa: 'La pobreza es un fenómeno social multivariable. No se le puede atribuir una sola causa física directa como la lluvia.' 
+          },
+          { 
+            id: 'c', 
+            texto: 'Sí, porque la lluvia destruye cultivos', 
+            justa: 'Aunque puede afectar la agricultura en ciertos contextos, no existe una conexión causal general y directa.' 
+          },
+          { 
+            id: 'd', 
+            texto: 'Es una relación puramente casual', 
+            justa: 'Más que una casualidad, es un error lógico de argumentación que confunde correlación con causalidad.' 
+          }
+        ]
+      },
+      claveRespuestas: {
+        correcta: 'a'
+      }
     }
   })
 

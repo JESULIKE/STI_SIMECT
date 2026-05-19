@@ -69,7 +69,8 @@ export default defineEventHandler(async (event) => {
     console.log('[Submit] Evaluación completada. Puntaje:', evaluation.scoreDetails.totalGained)
 
     // 3. Obtener el estado actual del estudiante (intentos previos y totales)
-    const [successfulAttempts, phaseTotal, levelTotal] = await Promise.all([
+    // IMPORTANTE: No filtramos por nivel — todos responden los 6 reactivos de cada subfase
+    const [successfulAttempts, phaseTotal, totalAllActivities, subPhaseTotalDb] = await Promise.all([
       prisma.activityAttempt.findMany({
         where: {
           studentProfileId,
@@ -83,13 +84,17 @@ export default defineEventHandler(async (event) => {
         },
         distinct: ['activityId']
       }),
-      // Total en esta fase
+      // Total en esta fase (sin filtro de nivel)
       prisma.activity.count({
-        where: { fase: activity.fase, nivel: activity.nivel, isPublished: true }
+        where: { fase: activity.fase, isPublished: true }
       }),
-      // Total en el nivel
+      // Total de todas las actividades (para barra de nivel global)
       prisma.activity.count({
-        where: { nivel: activity.nivel, isPublished: true }
+        where: { isPublished: true }
+      }),
+      // Total dinámico en esta subfase (sin filtro de nivel)
+      prisma.activity.count({
+        where: { fase: activity.fase, subPhase: activity.subPhase, isPublished: true }
       }),
     ])
 
@@ -104,17 +109,18 @@ export default defineEventHandler(async (event) => {
     if (isFirstSuccess && activity.subPhase) {
       const config = SUBPHASE_CONFIG[activity.subPhase]
       
-      // Contar cuántas actividades de esta subfase ya completó (sin contar la actual)
+      // Contar cuántas actividades de esta subfase ya completó (sin filtro de nivel — todos responden los 6)
       const completedInSubPhase = successfulAttempts.filter(
         a => a.activity.fase === activity.fase &&
-             a.activity.nivel === activity.nivel &&
              a.activity.subPhase === activity.subPhase &&
              a.activityId !== activityId
       ).length
       
       const completedAfterThis = completedInSubPhase + 1
-      const total = config?.totalActivities || 6
+      const total = subPhaseTotalDb > 0 ? subPhaseTotalDb : (config?.totalActivities || 6)
       progressPercent = Math.min((completedAfterThis / total) * 100, 100)
+
+      console.log(`[Submit] Subfase ${activity.subPhase}: ${completedAfterThis}/${total} completadas`)
 
       // Verificar si ya completó la subfase completa
       if (completedAfterThis >= total) {
@@ -130,7 +136,7 @@ export default defineEventHandler(async (event) => {
           if (activity.subPhase === '3.2') {
             bonusPointsAwarded += 150
             bonusMessage = "¡Nivel completado! ¡Eres un pensador crítico de élite! +200 Puntos Bonus 🎉"
-            console.log(`[Submit] ¡Nivel ${activity.nivel} completado! Otorgando 150 puntos adicionales (Total bonus: 200).`)
+            console.log(`[Submit] ¡Subfase 3.2 completada! Otorgando 150 puntos adicionales (Total bonus: 200).`)
           }
         }
       }
@@ -223,28 +229,23 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Filtrar localmente usando los intentos exitosos únicos
+    // Calcular barras de progreso sin filtro de nivel
     const phaseCompleted = successfulAttempts.filter(
-      a => a.activity.fase === activity.fase && a.activity.nivel === activity.nivel
+      a => a.activity.fase === activity.fase
     ).length
 
-    const levelCompleted = successfulAttempts.filter(
-      a => a.activity.nivel === activity.nivel
-    ).length
+    const totalAllCompleted = successfulAttempts.length
 
-    // Progreso de la actividad dentro de la subfase actual
-    const subPhaseConfig = activity.subPhase ? SUBPHASE_CONFIG[activity.subPhase] : null
+    // Progreso de la actividad dentro de la subfase actual (sin filtro de nivel)
     const subPhaseCompleted = successfulAttempts.filter(
       a => a.activity.fase === activity.fase &&
-           a.activity.nivel === activity.nivel &&
            a.activity.subPhase === activity.subPhase
     ).length
 
-    const activityProgressBar = subPhaseConfig 
-      ? Math.min(Math.round((subPhaseCompleted / subPhaseConfig.totalActivities) * 100), 100)
-      : 0
+    const totalForBar = subPhaseTotalDb > 0 ? subPhaseTotalDb : 6
+    const activityProgressBar = Math.min(Math.round((subPhaseCompleted / totalForBar) * 100), 100)
     const phaseProgressBar = phaseTotal > 0 ? Math.min(Math.round((phaseCompleted / phaseTotal) * 100), 100) : 0
-    const levelProgressBar = levelTotal > 0 ? Math.min(Math.round((levelCompleted / levelTotal) * 100), 100) : 0
+    const levelProgressBar = totalAllActivities > 0 ? Math.min(Math.round((totalAllCompleted / totalAllActivities) * 100), 100) : 0
 
     return {
       success: true,

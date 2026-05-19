@@ -2,11 +2,22 @@ import { prisma } from '~/server/utils/prisma'
 import { getTutorTone } from '~/server/utils/pedagogicalEngine'
 import type { Level, Phase } from '@prisma/client'
 
+/**
+ * Motor de Secuenciación de Subfases.
+ * Cada subfase tiene 6 actividades (B1, B2, M1, M2, A1, A2).
+ * Los estudiantes responden TODAS independientemente de su nivel asignado.
+ * El nivel afecta la retroalimentación pedagógica, no la visibilidad de los reactivos.
+ */
 const SUBPHASE_ORDER = ['1.1', '1.2', '2.1', '2.2', '3.1', '3.2']
-const SUBPHASE_TOTAL: Record<string, number> = {
-  '1.1': 6, '1.2': 6,
-  '2.1': 6, '2.2': 6,
-  '3.1': 6, '3.2': 6
+
+// Mapa: ANALYSIS subfases → qué fase de la DB les corresponde
+const SUBPHASE_PHASE_MAP: Record<string, Phase> = {
+  '1.1': 'ANALYSIS',
+  '1.2': 'ANALYSIS',
+  '2.1': 'EVALUATION',
+  '2.2': 'EVALUATION',
+  '3.1': 'JUDGMENT',
+  '3.2': 'JUDGMENT',
 }
 
 export default defineEventHandler(async (event) => {
@@ -14,7 +25,7 @@ export default defineEventHandler(async (event) => {
   const studentProfileId = session.user?.studentProfileId
   const query = getQuery(event)
 
-  const level = ((query.level as string) || 'BASIC').toUpperCase() as Level
+  // El parámetro phase guía cuál es la fase "raíz", pero la subfase activa puede ser cualquiera
   const phase = ((query.phase as string) || 'ANALYSIS').toUpperCase() as Phase
 
   try {
@@ -34,7 +45,7 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // 1. Una sola query para traer todos los intentos exitosos del estudiante (reemplaza el bucle serial)
+    // 1. Traer todos los intentos exitosos del estudiante (sin filtro de nivel)
     const successfulAttempts = studentProfileId
       ? await prisma.activityAttempt.findMany({
           where: {
@@ -53,12 +64,13 @@ export default defineEventHandler(async (event) => {
 
     const completedActivityIds = successfulAttempts.map(a => a.activityId)
 
-    // 2. Determinar la subfase activa filtrando en memoria (sin más queries)
-    // También cargamos todos los totales de una vez
-    const [allActivitiesForLevel, pedagogicalContextSource] = await Promise.all([
+    // 2. Traer TODAS las actividades de TODAS las subfases de TODAS las fases
+    //    sin filtrar por nivel — todos los estudiantes ven los mismos 6 reactivos por subfase
+    const [allActivities, pedagogicalContextSource] = await Promise.all([
       prisma.activity.findMany({
-        where: { nivel: level, fase: phase, isPublished: true },
-        select: { id: true, subPhase: true, titulo: true, descripcion: true, tipo: true, puntajeMaximo: true, contenido: true, claveRespuestas: true, materialApoyo: true, createdAt: true }
+        where: { isPublished: true },
+        select: { id: true, subPhase: true, fase: true, nivel: true, titulo: true, descripcion: true, tipo: true, puntajeMaximo: true, contenido: true, claveRespuestas: true, createdAt: true },
+        orderBy: [{ subPhase: 'asc' }, { createdAt: 'asc' }]
       }),
       studentProfileId
         ? prisma.metacognitionChecklist.findFirst({
@@ -68,23 +80,21 @@ export default defineEventHandler(async (event) => {
         : Promise.resolve(null)
     ])
 
-    // Calcular totales por subfase en memoria
+    // 3. Calcular totales y completados por subfase en memoria
     const totalBySubphase: Record<string, number> = {}
     const completedBySubphase: Record<string, number> = {}
 
-    for (const act of allActivitiesForLevel) {
+    for (const act of allActivities) {
       const sp = act.subPhase || ''
       totalBySubphase[sp] = (totalBySubphase[sp] || 0) + 1
     }
 
     for (const attempt of successfulAttempts) {
-      if (attempt.activity.fase === phase && attempt.activity.nivel === level) {
-        const sp = attempt.activity.subPhase || ''
-        completedBySubphase[sp] = (completedBySubphase[sp] || 0) + 1
-      }
+      const sp = attempt.activity.subPhase || ''
+      completedBySubphase[sp] = (completedBySubphase[sp] || 0) + 1
     }
 
-    // Encontrar la primera subfase que no esté completa
+    // 4. Encontrar la primera subfase activa (incompleta y con actividades)
     let activeSubPhase: string | null = null
     for (const sp of SUBPHASE_ORDER) {
       const total = totalBySubphase[sp] || 0
@@ -95,48 +105,51 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // 3. Filtrar actividades no completadas de la subfase activa
-    const activities = allActivitiesForLevel
+    // 5. Filtrar actividades pendientes de la subfase activa, ordenadas por fecha de creación
+    const activities = allActivities
       .filter(act =>
         act.subPhase === activeSubPhase &&
         !completedActivityIds.includes(act.id)
       )
-      .sort((a, b) => a.createdAt > b.createdAt ? 1 : -1)
 
-    // 4. Calcular barras de progreso en memoria (sin queries adicionales)
-    const phaseCompleted = successfulAttempts.filter(
-      a => a.activity.fase === phase && a.activity.nivel === level
-    ).length
-    const phaseTotal = allActivitiesForLevel.length
-
-    const levelCompletedCount = successfulAttempts.filter(
-      a => a.activity.nivel === level
-    ).length
-    const levelTotal = await prisma.activity.count({
-      where: { nivel: level, isPublished: true }
-    })
-
+    // 6. Calcular barras de progreso
+    // — barra de actividad: % dentro de la subfase activa
     const subPhaseCompleted = activeSubPhase ? (completedBySubphase[activeSubPhase] || 0) : 0
-    const subPhaseTotal = activeSubPhase ? (SUBPHASE_TOTAL[activeSubPhase] || 6) : 6
+    const subPhaseTotal = activeSubPhase ? (totalBySubphase[activeSubPhase] || 6) : 6
 
-    const progressBars = {
-      activity: Math.min(Math.round((subPhaseCompleted / subPhaseTotal) * 100), 100),
-      phase: phaseTotal > 0 ? Math.min(Math.round((phaseCompleted / phaseTotal) * 100), 100) : 0,
-      level: levelTotal > 0 ? Math.min(Math.round((levelCompletedCount / levelTotal) * 100), 100) : 0
+    // — barra de fase: % de las subfases que pertenecen a esta fase
+    const subPhasesForPhase = SUBPHASE_ORDER.filter(sp => SUBPHASE_PHASE_MAP[sp] === phase)
+    let phaseCompleted = 0
+    let phaseTotal = 0
+    for (const sp of subPhasesForPhase) {
+      phaseCompleted += completedBySubphase[sp] || 0
+      phaseTotal += totalBySubphase[sp] || 0
     }
 
-    // 5. Contexto pedagógico
+    // — barra de nivel: todas las actividades completadas hasta ahora
+    const totalAllActivities = allActivities.length
+    const totalAllCompleted = successfulAttempts.length
+
+    const progressBars = {
+      activity: subPhaseTotal > 0 ? Math.min(Math.round((subPhaseCompleted / subPhaseTotal) * 100), 100) : 0,
+      phase: phaseTotal > 0 ? Math.min(Math.round((phaseCompleted / phaseTotal) * 100), 100) : 0,
+      level: totalAllActivities > 0 ? Math.min(Math.round((totalAllCompleted / totalAllActivities) * 100), 100) : 0
+    }
+
+    // 7. Contexto pedagógico del tutor
     const pedagogicalContext = getTutorTone(pedagogicalContextSource)
 
-    // 6. Incluir la primera actividad completa en la respuesta (elimina el double-fetch del cliente)
     const firstActivity = activities[0] || null
+
+    console.log(`[available] Subfase activa: ${activeSubPhase} | Completadas: ${subPhaseCompleted}/${subPhaseTotal} | Total actividades pendientes: ${activities.length}`)
 
     return {
       success: true,
       data: activities,
-      firstActivity,       // <- datos completos de la primera actividad para el cliente
+      firstActivity,
       context: pedagogicalContext,
-      progressBars
+      progressBars,
+      activeSubPhase
     }
   } catch (error: any) {
     throw createError({

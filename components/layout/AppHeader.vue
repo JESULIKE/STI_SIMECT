@@ -22,14 +22,16 @@ const handleLogout = async () => {
 }
 
 const navItems = computed(() => {
-  const items = [
-    { name: 'Dashboard', path: '/dashboard', icon: '🏠' },
-    { name: 'Aprender', path: '/learn/BASIC/ANALYSIS', icon: '📚' },
-    { name: 'Mi Progreso', path: '/progress', icon: '📈' },
-  ]
-  if (user.value?.role !== 'STUDENT') {
+  const items = []
+  
+  if (user.value?.role === 'STUDENT') {
+    items.push({ name: 'Dashboard', path: '/dashboard', icon: '🏠' })
+    items.push({ name: 'Aprender', path: '/learn/BASIC/ANALYSIS', icon: '📚' })
+    items.push({ name: 'Mi Progreso', path: '/progress', icon: '📈' })
+  } else {
     items.push({ name: 'Analítica Docente', path: '/admin/analytics', icon: '👩‍🏫' })
   }
+  
   return items
 })
 

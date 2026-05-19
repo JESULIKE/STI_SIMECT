@@ -7,7 +7,6 @@ const { fetch: refreshSession } = useUserSession()
 const router = useRouter()
 
 const form = reactive({
-  name: '',
   studentCode: '',
   password: '',
   acceptedConsent: false
@@ -22,8 +21,7 @@ const isCodeValid = computed(() => {
 })
 
 const isFormValid = computed(() => {
-  return form.name.length > 0 && 
-         form.studentCode.length > 0 && 
+  return form.studentCode.length > 0 && 
          form.password.length > 0 &&
          form.acceptedConsent
 })
@@ -39,7 +37,6 @@ const handleLogin = async () => {
     await $fetch('/api/auth/login', {
       method: 'POST',
       body: {
-        name: form.name,
         studentCode: form.studentCode,
         password: form.password,
         role: role
@@ -140,17 +137,6 @@ const floatingEmojis = [
           <div class="text-center space-y-1 mb-2">
             <h2 class="text-xl font-black text-blue-900 uppercase tracking-tight">Bienvenido de nuevo</h2>
             <p class="text-[10px] text-blue-700 font-bold uppercase tracking-widest italic">Ingresa tus credenciales para continuar</p>
-          </div>
-
-          <div class="space-y-2">
-            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-blue-900 px-2">Nombre Completo</label>
-            <input 
-              v-model="form.name"
-              type="text" 
-              required
-              placeholder="Ej: Juan Pérez"
-              class="w-full px-6 py-5 bg-blue-50 border-2 border-blue-200 rounded-3xl text-blue-900 placeholder:text-blue-300 focus:border-blue-500 focus:outline-none transition-all shadow-sm italic font-medium"
-            >
           </div>
 
           <div class="space-y-2">

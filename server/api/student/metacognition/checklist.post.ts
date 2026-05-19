@@ -15,11 +15,11 @@ export default defineEventHandler(async (event) => {
     const checklist = await prisma.metacognitionChecklist.create({
       data: {
         studentProfileId,
-        queSe: body.queSe,
-        queEsperoAprender: body.queEsperoAprender,
-        confianzaInicial: body.confianzaInicial,
-        estrategias: body.estrategias, // JSON con lista de estrategias
-        entornoSinDistracciones: body.entornoSinDistracciones
+        queSe: body.q1 || '',
+        queEsperoAprender: body.q2 || '',
+        confianzaInicial: parseInt(body.q3) || 1,
+        estrategias: body.q4 && body.q5 ? [body.q4, `Tiempo estimado: ${body.q5}`] : [],
+        entornoSinDistracciones: body.q6 === true
       }
     })
 
