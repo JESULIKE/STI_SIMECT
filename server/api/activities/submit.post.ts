@@ -105,6 +105,7 @@ export default defineEventHandler(async (event) => {
     let progressPercent = 0
     let bonusPointsAwarded = 0
     let bonusMessage: string | null = null
+    let isSubPhaseComplete = false
 
     if (isFirstSuccess && activity.subPhase) {
       const config = SUBPHASE_CONFIG[activity.subPhase]
@@ -124,6 +125,7 @@ export default defineEventHandler(async (event) => {
 
       // Verificar si ya completó la subfase completa
       if (completedAfterThis >= total) {
+        isSubPhaseComplete = true
         if (config?.nextSubPhase) {
           subPhaseUnlocked = config.nextSubPhase
           console.log(`[Submit] ¡Subfase ${activity.subPhase} completada! Desbloqueando ${subPhaseUnlocked}`)
@@ -261,6 +263,7 @@ export default defineEventHandler(async (event) => {
         newBadges,
         isRepeat: !isFirstSuccess,
         subPhaseUnlocked,
+        isSubPhaseComplete,
         progressBars: {
           activity: activityProgressBar,
           phase: phaseProgressBar,

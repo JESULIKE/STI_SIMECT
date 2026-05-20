@@ -195,23 +195,31 @@ model MetacognitionChecklist {
   session        SessionLog?    @relation(fields: [sessionId], references: [id])
 }
 
-/// Reflexión profunda después de una actividad o hito.
+/// Reflexión profunda después de un hito (subfase completada).
 model Reflection {
   id                String  @id @default(uuid())
   studentProfileId  String
   activityAttemptId String? @unique
 
+  // Resumen textual (para búsqueda rápida)
   queAprendi        String? @db.Text
   queFueDificil     String? @db.Text
-  autoEvaluacion    Int? // Del 1 al 5
-  transferencia     String? @db.Text // ¿Cómo aplico esto en otro contexto?
+  autoEvaluacion    Int?    // Promedio redondeado de las 4 dimensiones (1-5)
+  transferencia     String? @db.Text // "Sí" / "Tal vez" / "No"
   queHariaDiferente String? @db.Text
+
+  // Dimensiones individuales de autoevaluación (Meta-Reflexión de Flavell)
+  claridadMonteria   Int?  // ¿Qué tan claro qué pasó en Montería? (1-5)
+  hechosOpiniones    Int?  // ¿Distinguiste hechos de opiniones? (1-5)
+  datosConcretosStar Int?  // ¿Tus hechos incluyen cifras/fechas? (1-5)
+  sigueEstrategia    Int?  // ¿Seguiste tu estrategia planeada? (1-5)
 
   createdAt DateTime @default(now())
 
   studentProfile  StudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
   activityAttempt ActivityAttempt? @relation(fields: [activityAttemptId], references: [id], onDelete: SetNull)
 }
+
 
 // ── GAMIFICACIÓN Y NARRATIVA ───────────────────────────────────────────
 

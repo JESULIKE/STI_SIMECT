@@ -14,6 +14,28 @@ export type SessionState =
   | 'READING_NARRATIVE'
   | 'DECISION_ROUTING'
 
+/**
+ * Obtiene el Set de subfases cuyo contexto ya fue mostrado en esta sesión de navegador.
+ * Se persiste en sessionStorage para que no se repita si el estudiante recarga la página
+ * dentro de la misma sesión del navegador.
+ */
+function getSeenSubPhases(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = sessionStorage.getItem('simect_seen_subphases')
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch { return new Set() }
+}
+
+function markSubPhaseSeen(sp: string) {
+  if (typeof window === 'undefined') return
+  try {
+    const seen = getSeenSubPhases()
+    seen.add(sp)
+    sessionStorage.setItem('simect_seen_subphases', JSON.stringify([...seen]))
+  } catch {}
+}
+
 export function useLearningSession() {
   const studentStore = useStudentStore()
   const gamification = useGamification()
@@ -29,7 +51,44 @@ export function useLearningSession() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  // Rastrea la subfase activa para detectar transiciones
+  const currentActiveSubPhase = ref<string | null>(null)
+
   const activityManager = useActivity(currentActivityId)
+
+  /**
+   * Intenta obtener el contexto narrativo para una subfase.
+   * Si existe y no fue mostrado aún en esta sesión, cambia el estado a READING_NARRATIVE.
+   * Devuelve true si se mostró el contexto, false si se saltó (ya visto).
+   */
+  const tryShowSubPhaseContext = async (subPhase: string): Promise<boolean> => {
+    const seen = getSeenSubPhases()
+    console.log(`[Session] tryShowSubPhaseContext para subfase: ${subPhase}. Vistas en esta sesión:`, [...seen])
+    if (seen.has(subPhase)) {
+      console.log(`[Session] La subfase ${subPhase} ya fue vista en esta sesión, omitiendo contexto.`)
+      return false
+    }
+
+    try {
+      console.log(`[Session] Cargando contexto narrativo para subfase ${subPhase} desde el servidor...`)
+      const response: any = await $fetch('/api/narrative/chapter', {
+        query: { subPhase }
+      })
+      if (response.success && response.isContext && response.data) {
+        console.log(`[Session] Contexto obtenido con éxito para ${subPhase}:`, response.data)
+        narrativeChapterData.value = response.data
+        markSubPhaseSeen(subPhase)
+        currentState.value = 'READING_NARRATIVE'
+        console.log(`[Session] Estado cambiado a READING_NARRATIVE`)
+        return true
+      } else {
+        console.warn(`[Session] Respuesta del servidor no válida para contexto de ${subPhase}:`, response)
+      }
+    } catch (e) {
+      console.warn('[Session] No se pudo cargar el contexto narrativo para subfase', subPhase, e)
+    }
+    return false
+  }
 
   const loadNextActivity = async () => {
     console.log('Buscando próxima actividad para:', studentStore.progress.level, studentStore.progress.phase)
@@ -45,7 +104,6 @@ export function useLearningSession() {
       const phase = (studentStore.progress.phase || 'ANALYSIS').toUpperCase()
       
       console.log(`[Session] Cargando: ${level} / ${phase}`)
-      console.log(`[Session] Perfil ID: ${studentStore.progress.subPhase}`) // subPhase suele guardar el ID en algunos logs
       
       const response: any = await $fetch('/api/activities/available', {
         query: { level, phase },
@@ -69,6 +127,19 @@ export function useLearningSession() {
         currentActivityData.value = response.firstActivity
         activityManager.resetTimer()
         console.log('Actividad lista:', currentActivityData.value.titulo)
+
+        // ── Detectar si entramos a una subfase nueva y mostrar su contexto ────
+        const newSubPhase = response.activeSubPhase as string | null
+        console.log(`[Session] Comparando subfases. Nueva activa: ${newSubPhase}, Anterior activa registrada: ${currentActiveSubPhase.value}`)
+        if (newSubPhase && newSubPhase !== currentActiveSubPhase.value) {
+          console.log(`[Session] ¡Nueva subfase detectada! ${newSubPhase} (anterior: ${currentActiveSubPhase.value || 'ninguna'})`)
+          currentActiveSubPhase.value = newSubPhase
+          // tryShowSubPhaseContext cambiará el estado a READING_NARRATIVE si corresponde.
+          // Si devuelve false (ya visto), el llamador pondrá ACTIVITY_PRESENTATION.
+          const showed = await tryShowSubPhaseContext(newSubPhase)
+          console.log(`[Session] tryShowSubPhaseContext de ${newSubPhase} devolvió:`, showed)
+          if (showed) return // el flujo continúa desde finishNarrative
+        }
       } else {
         console.info('El usuario ha completado todas las actividades disponibles para este nivel/fase.')
         error.value = "¡Felicidades! Has completado todos los desafíos de esta etapa. Pronto desbloquearemos nuevas misiones."
@@ -98,17 +169,21 @@ export function useLearningSession() {
       // 2. Actualizar estado local en el store
       studentStore.completeChecklist()
       
-      // 3. Cargar próxima actividad
+      // 3. Cargar próxima actividad (puede cambiar a READING_NARRATIVE si es subfase nueva)
       await loadNextActivity()
       
-      // 4. Cambiar estado visual
-      currentState.value = 'ACTIVITY_PRESENTATION'
+      // 4. Cambiar estado visual solo si loadNextActivity no puso otro estado
+      if (currentState.value === 'CHECKLIST_PENDING') {
+        currentState.value = 'ACTIVITY_PRESENTATION'
+      }
     } catch (e) {
       console.error('Error al guardar planificación:', e)
       // Fallback para no bloquear al estudiante si falla la red/DB
       studentStore.completeChecklist()
       await loadNextActivity()
-      currentState.value = 'ACTIVITY_PRESENTATION'
+      if (currentState.value === 'CHECKLIST_PENDING') {
+        currentState.value = 'ACTIVITY_PRESENTATION'
+      }
     }
   }
 
@@ -152,11 +227,7 @@ export function useLearningSession() {
 
       activityManager.state.value = 'finished'
 
-      if (result.decision.action === 'METACOGNITIVE_ALERT') {
-        currentState.value = 'REFLECTION_PENDING'
-      } else {
-        currentState.value = 'FEEDBACK'
-      }
+      currentState.value = 'FEEDBACK'
       
       studentStore.incrementActivityCount()
     } catch (e) {
@@ -185,8 +256,12 @@ export function useLearningSession() {
       return
     }
 
-    currentState.value = 'ACTIVITY_PRESENTATION'
-    loadNextActivity()
+    // Después de la reflexión, cargamos la siguiente subfase
+    // loadNextActivity mostrará el contexto si es una subfase nueva
+    await loadNextActivity()
+    if (currentState.value === 'REFLECTION_PENDING') {
+      currentState.value = 'ACTIVITY_PRESENTATION'
+    }
   }
 
   const advanceFromFeedback = async () => {
@@ -196,38 +271,51 @@ export function useLearningSession() {
       activityManager.resetTimer()
       return
     }
-    currentState.value = 'REFLECTION_PENDING'
-  }
-
-  const finishCelebration = async () => {
-    // Buscar si hay capítulo narrativo para mostrar
-    try {
-      const response = await $fetch('/api/narrative/chapter', {
-        query: {
-          level: studentStore.progress.level,
-          phase: studentStore.progress.phase,
-          chapter: lastEvaluation.value?.unlockChapter
-        }
-      })
-      narrativeChapterData.value = (response as any).data
-      currentState.value = 'READING_NARRATIVE'
-    } catch (error) {
-      // Si falla, pasamos directo a la siguiente actividad
+    
+    if (lastEvaluation.value?.isSubPhaseComplete) {
+      // Subfase completada → primero la reflexión metacognitiva
+      currentState.value = 'REFLECTION_PENDING'
+    } else {
+      if (action === 'CHALLENGE_UNLOCK' || lastEvaluation.value?.unlockChapter) {
+        gamification.processLevelUp()
+        currentState.value = 'CELEBRATING'
+        return
+      }
+      // Actividad normal completada → siguiente actividad (misma subfase)
       currentState.value = 'ACTIVITY_PRESENTATION'
       loadNextActivity()
     }
   }
 
-  const finishNarrative = () => {
-    // Si subió de nivel en la lógica, actualizar store (Ej: 'ADVANCED')
-    // studentStore.setProgress({ level: 'ADVANCED' })
-    
+  const finishCelebration = async () => {
+    // Eliminado el capítulo de celebración narrativo de "Crónica del Bosque" por completo a petición del usuario.
+    // Avanzamos directamente a la presentación de la siguiente actividad o subfase.
+    console.log('[Session] Celebración terminada. Avanzando directo a la siguiente actividad.')
     currentState.value = 'ACTIVITY_PRESENTATION'
-    loadNextActivity()
+    await loadNextActivity()
+  }
+
+  const finishNarrative = async () => {
+    // Después de leer un contexto o capítulo de celebración, continuamos a la actividad
+    currentState.value = 'ACTIVITY_PRESENTATION'
+    // Si ya tenemos la actividad cargada (contexto previo a subfase), no recargamos
+    if (!currentActivityData.value) {
+      await loadNextActivity()
+    }
   }
 
   // Init
-  if (currentState.value === 'ACTIVITY_PRESENTATION') {
+  if (currentState.value === 'CHECKLIST_PENDING') {
+    console.log('[Session] Planificación inicial pendiente. Limpiando subfases vistas de sessionStorage para reiniciar el flujo.')
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('simect_seen_subphases')
+        console.log('[Session] sessionStorage "simect_seen_subphases" limpio con éxito.')
+      } catch (e) {
+        console.warn('[Session] No se pudo limpiar sessionStorage:', e)
+      }
+    }
+  } else if (currentState.value === 'ACTIVITY_PRESENTATION') {
     loadNextActivity()
   }
 

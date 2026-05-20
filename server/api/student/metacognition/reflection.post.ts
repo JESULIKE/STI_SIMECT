@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event)
@@ -12,10 +10,21 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
 
   try {
-    const queAprendiResumen = `Claridad: ${body.clarity}/5 | Hechos/Opiniones: ${body.factsOpinions}/5 | Datos Concretos: ${body.concreteData}/5 | Estrategia: ${body.followedStrategy}/5`
-    const autoEvalAvg = Math.round((body.clarity + body.factsOpinions + body.concreteData + body.followedStrategy) / 4)
+    // Calcular promedio de las 4 dimensiones de estrella
+    const autoEvalAvg = Math.round(
+      (body.clarity + body.factsOpinions + body.concreteData + body.followedStrategy) / 4
+    )
 
-    const textCombined = `${queAprendiResumen} ${body.difficult || ''} ${body.transfer || ''} ${body.differentNext || ''}`.trim()
+    // Resumen textual compacto (para búsqueda rápida en panel docente)
+    const queAprendiResumen = [
+      `Claridad Montería: ${body.clarity}/5`,
+      `Hechos/Opiniones: ${body.factsOpinions}/5`,
+      `Datos Concretos: ${body.concreteData}/5`,
+      `Siguió Estrategia: ${body.followedStrategy}/5`,
+      `Transferencia: ${body.transfer || '—'}`
+    ].join(' | ')
+
+    const textCombined = `${queAprendiResumen} ${body.difficult || ''} ${body.differentNext || ''}`.trim()
     const isSubstantial = textCombined.length >= 40
     let pointsAwarded = 0
 
@@ -23,12 +32,20 @@ export default defineEventHandler(async (event) => {
       const reflection = await tx.reflection.create({
         data: {
           studentProfileId,
-          activityAttemptId: body.activityAttemptId,
-          queAprendi: queAprendiResumen,
-          queFueDificil: body.difficult,
-          autoEvaluacion: autoEvalAvg,
-          transferencia: body.transfer,
-          queHariaDiferente: body.differentNext
+          activityAttemptId: body.activityAttemptId || null,
+
+          // Resumen textual
+          queAprendi:       queAprendiResumen,
+          queFueDificil:    body.difficult    || null,
+          autoEvaluacion:   autoEvalAvg,
+          transferencia:    body.transfer     || null,
+          queHariaDiferente: body.differentNext || null,
+
+          // Dimensiones individuales (Meta-Reflexión de Flavell)
+          claridadMonteria:   body.clarity          || null,
+          hechosOpiniones:    body.factsOpinions     || null,
+          datosConcretosStar: body.concreteData      || null,
+          sigueEstrategia:    body.followedStrategy  || null,
         }
       })
 
@@ -36,9 +53,7 @@ export default defineEventHandler(async (event) => {
         pointsAwarded = 10
         await tx.studentProfile.update({
           where: { id: studentProfileId },
-          data: {
-            totalPoints: { increment: 10 }
-          }
+          data: { totalPoints: { increment: 10 } }
         })
       }
 

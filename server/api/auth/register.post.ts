@@ -21,12 +21,21 @@ export default defineEventHandler(async (event) => {
     // Normalización de Datos
     if (email) email = email.trim().toLowerCase()
     
-    // Auto-generar código si no se proporciona (lo normal ahora)
+    // Auto-generar código único si no se proporciona
     const assignedRole = (role || 'STUDENT') as Role
     if (!studentCode) {
-      const count = await prisma.user.count({ where: { role: assignedRole } })
       const prefix = assignedRole === 'STUDENT' ? 'EST-' : 'DOC-'
-      studentCode = `${prefix}${String(count + 1).padStart(3, '0')}`
+      // Buscar el número más alto entre los códigos existentes para ese prefijo
+      // (más seguro que contar: evita colisiones cuando hay registros borrados)
+      const usersWithCode = await prisma.user.findMany({
+        where: { code: { startsWith: prefix } },
+        select: { code: true }
+      })
+      const maxNum = usersWithCode.reduce((max, u) => {
+        const num = parseInt(u.code?.replace(prefix, '') || '0', 10)
+        return isNaN(num) ? max : Math.max(max, num)
+      }, 0)
+      studentCode = `${prefix}${String(maxNum + 1).padStart(3, '0')}`
     } else {
       studentCode = studentCode.trim()
       if (studentCode.toLowerCase().startsWith('est-') || studentCode.toLowerCase().startsWith('doc-')) {

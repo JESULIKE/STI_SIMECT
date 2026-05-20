@@ -13,7 +13,7 @@
     <div class="mb-10 text-center md:text-left">
       <div class="flex flex-col md:flex-row justify-between items-center mb-2 gap-4">
         <h2 class="text-3xl font-black tracking-tight uppercase italic text-black">Planificación de Sesión</h2>
-        <span class="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full font-mono font-bold text-sm">Paso {{ completedCount }}/6</span>
+        <span class="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full font-mono font-bold text-sm">Paso {{ completedCount }}/5</span>
       </div>
       <p class="text-black text-sm font-black italic">
         Modelo de Flavell: Activa tu mente antes de comenzar.
@@ -24,7 +24,7 @@
     <div class="space-y-8">
       <form @submit.prevent="handleSubmit" class="space-y-12 pb-12">
         
-        <!-- 1. Conocimiento Previo -->
+        <!-- 1. Plan de resolución -->
         <div class="space-y-4">
           <label class="block text-sm font-black text-black uppercase tracking-widest">
             <span class="text-indigo-600 mr-2">01</span> ¿Cómo planeas resolver este desafío?
@@ -43,6 +43,7 @@
           </div>
         </div>
 
+        <!-- 2. ¿Qué espero aprender? -->
         <div class="space-y-4" :class="formData.q1 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
           <label class="block text-sm font-black text-black uppercase tracking-widest">
             <span class="text-indigo-500 mr-2">02</span> ¿Qué espero aprender en esta sesión?
@@ -101,30 +102,12 @@
           </div>
         </div>
 
-        <!-- 5. Estimación de Tiempo -->
-        <div class="space-y-4" :class="formData.q4 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
-          <label class="block text-sm font-black text-black uppercase tracking-widest">
-            <span class="text-indigo-500 mr-2">05</span> ¿Cuánto tiempo creo que necesitaré?
-          </label>
-          <div class="grid grid-cols-3 gap-4">
-            <button 
-              v-for="opt in ['< 15 min', '15-20 min', '> 20 min']" :key="opt"
-              type="button"
-              @click="formData.q5 = opt"
-              class="p-5 rounded-2xl border-2 text-[10px] font-black uppercase tracking-widest transition-all"
-              :class="formData.q5 === opt ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-100 text-black'"
-            >
-              {{ opt }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 6. Entorno sin distracciones -->
-        <div class="pt-4" :class="formData.q5 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
+        <!-- 5. Entorno sin distracciones -->
+        <div class="pt-4" :class="formData.q4 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
           <label class="relative flex items-center gap-4 p-6 rounded-[32px] border-2 border-slate-100 bg-white cursor-pointer group hover:border-indigo-500/50 transition-all shadow-sm">
             <input 
               type="checkbox" 
-              v-model="formData.q6" 
+              v-model="formData.q5" 
               class="w-6 h-6 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
             >
             <span class="text-xs font-bold text-black uppercase tracking-[0.1em]">
@@ -158,12 +141,11 @@ import { reactive, ref, computed } from 'vue'
 const emit = defineEmits(['submit'])
 
 const formData = reactive({
-  q1: '', // Conocimiento previo -> Ahora Plan de resolución
-  q2: '', // Metas
-  q3: 0,  // Confianza 1-5
+  q1: '', // Plan de resolución
+  q2: '', // Expectativa de aprendizaje
+  q3: 0,  // Confianza inicial 1-5
   q4: '', // Estrategia
-  q5: '', // Tiempo estimado
-  q6: false // Entorno
+  q5: false // Entorno sin distracciones (antes q6)
 })
 
 const isSubmitting = ref(false)
@@ -175,17 +157,15 @@ const completedCount = computed(() => {
   if (formData.q3 > 0) count++
   if (formData.q4) count++
   if (formData.q5) count++
-  if (formData.q6) count++
   return count
 })
 
-const progressPercent = computed(() => (completedCount.value / 6) * 100)
-const isFormValid = computed(() => completedCount.value === 6)
+const progressPercent = computed(() => (completedCount.value / 5) * 100)
+const isFormValid = computed(() => completedCount.value === 5)
 
 const handleSubmit = async () => {
   if (!isFormValid.value) return
   isSubmitting.value = true
-  // Simulando guardado en DB
   await new Promise(r => setTimeout(r, 1200))
   emit('submit', { 
     ...formData,
