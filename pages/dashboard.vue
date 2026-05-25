@@ -13,11 +13,15 @@ onMounted(async () => {
   try {
     const data: any = await $fetch('/api/student/progress')
     
-    // Sincronizar el store local con la BD
     studentStore.setProgress({
       totalPoints: data.points,
       currentStreak: data.streak
     })
+
+    // Sincronizar el nivel adaptativo si viene de la BD
+    if (data.nivelActual) {
+      studentStore.setAssignedLevel(data.nivelActual)
+    }
     
     realPhases.value = data.phases
     realBadges.value = data.badges || []
@@ -46,7 +50,17 @@ const currentPhaseLabel = computed(() => {
 const stats = computed(() => [
   { label: 'Puntos', value: studentStore.progress.totalPoints, icon: '⭐', color: 'text-amber-500' },
   { label: 'Fase', value: currentPhaseLabel.value, icon: '🎯', color: 'text-indigo-500' },
-  { label: 'Racha', value: `${studentStore.progress.currentStreak} días`, icon: '🔥', color: 'text-orange-500' }
+  { label: 'Racha', value: `${studentStore.progress.currentStreak} días`, icon: '🔥', color: 'text-orange-500' },
+  {
+    label: 'Nivel',
+    value: studentStore.progress.assignedLevel?.label || 'Básico',
+    icon: studentStore.progress.assignedLevel?.emoji || '🟢',
+    color: studentStore.progress.assignedLevel?.color === 'indigo'
+      ? 'text-indigo-600'
+      : studentStore.progress.assignedLevel?.color === 'red'
+        ? 'text-red-600'
+        : 'text-emerald-600'
+  }
 ])
 
 const handleContinue = () => {
@@ -192,18 +206,20 @@ const floatingEmojis = [
             <div class="absolute inset-0 bg-gradient-to-br from-black/20 to-transparent"></div>
             <div class="relative z-10 space-y-6">
               <div class="w-full h-40 bg-white/10 rounded-3xl overflow-hidden relative">
-                <div class="absolute inset-0 flex items-center justify-center text-6xl opacity-30 grayscale group-hover:grayscale-0 transition-all duration-700">💡</div>
-                <div class="absolute inset-0 flex items-center justify-center text-xs font-black text-white/50 uppercase tracking-widest italic">Capítulo 1</div>
+                <img src="/Contexto.png" alt="Contextualización" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
               </div>
               <div class="space-y-2">
-                <h3 class="text-xl font-black text-white italic uppercase">El inicio del viaje</h3>
+                <h3 class="text-xl font-black text-white italic uppercase">El Sistema y el Tema</h3>
                 <p class="text-white/70 text-xs font-medium italic leading-relaxed line-clamp-3">
-                  Bienvenido(a). Has dado el primer paso en tu camino de aprendizaje...
+                  Consulta aquí qué es SIMECT, cómo funciona y la historia de Mateo en las inundaciones de Córdoba.
                 </p>
               </div>
-              <button class="w-full py-4 bg-white text-indigo-600 font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl hover:bg-indigo-50 transition-colors">
-                Leer Historia
-              </button>
+              <NuxtLink
+                to="/contextualization"
+                class="block w-full py-4 bg-white text-indigo-600 font-black uppercase tracking-widest text-[10px] rounded-2xl shadow-xl hover:bg-indigo-50 transition-colors text-center"
+              >
+                Ver Contextualización
+              </NuxtLink>
             </div>
           </div>
 

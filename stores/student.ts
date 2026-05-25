@@ -47,6 +47,14 @@ export interface StudentProgress {
   lastFeedbackMessage: string | null
   activitiesSinceLastPause: number
   needsConsciousPause: boolean
+
+  // Nivel adaptativo (asignado por JOL y ajustado por respuestas)
+  assignedLevel: {
+    code: string
+    label: string
+    emoji: string
+    color: string
+  } | null
 }
 
 export const useStudentStore = defineStore('student', () => {
@@ -93,6 +101,7 @@ export const useStudentStore = defineStore('student', () => {
     lastFeedbackMessage: null,
     activitiesSinceLastPause: 0,
     needsConsciousPause: false,
+    assignedLevel: null,
   })
 
   // Getters
@@ -151,6 +160,17 @@ export const useStudentStore = defineStore('student', () => {
   }
 
   /**
+   * Actualiza el nivel adaptativo del estudiante (desde JOL o respuesta adaptativa).
+   */
+  const setAssignedLevel = (nivel: { code: string; label: string; emoji: string; color: string }) => {
+    progress.value.assignedLevel = nivel
+    // Sincronizar también el campo level del store para compatibilidad
+    if (nivel.code === 'BASIC' || nivel.code === 'INTERMEDIATE' || nivel.code === 'ADVANCED') {
+      progress.value.level = nivel.code as any
+    }
+  }
+
+  /**
    * Actualiza las barras de progreso de la UI con datos frescos del servidor.
    * Debe llamarse después de cada submit exitoso.
    */
@@ -173,6 +193,7 @@ export const useStudentStore = defineStore('student', () => {
     completeChecklist,
     incrementActivityCount,
     completeConsciousPause,
-    updateProgressBars
+    updateProgressBars,
+    setAssignedLevel
   }
 })

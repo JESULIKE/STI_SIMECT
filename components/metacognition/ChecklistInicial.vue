@@ -1,162 +1,212 @@
 <template>
   <div class="max-w-2xl mx-auto animate-slide-up relative">
-    
-    <!-- Barra de Progreso del Checklist -->
+
+    <!-- Barra de Progreso -->
     <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-8 shadow-sm">
-      <div 
+      <div
         class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
         :style="{ width: `${progressPercent}%` }"
       ></div>
     </div>
 
     <!-- Header -->
-    <div class="mb-10 text-center md:text-left">
-      <div class="flex flex-col md:flex-row justify-between items-center mb-2 gap-4">
-        <h2 class="text-3xl font-black tracking-tight uppercase italic text-black">Planificación de Sesión</h2>
-        <span class="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full font-mono font-bold text-sm">Paso {{ completedCount }}/5</span>
+    <div class="mb-10">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+        <div>
+          <h2 class="text-3xl font-black tracking-tight uppercase italic text-black">Planeación</h2>
+          <p class="text-black text-sm font-black italic mt-1">Primer momento metacognitivo — JOL (Judgments of Learning)</p>
+        </div>
+        <span class="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full font-mono font-bold text-sm shrink-0">
+          {{ completedCount }}/5 completado
+        </span>
       </div>
-      <p class="text-black text-sm font-black italic">
-        Modelo de Flavell: Activa tu mente antes de comenzar.
-      </p>
+
+      <!-- Aviso pedagógico -->
+      <div class="flex items-start gap-3 p-5 rounded-[24px] border-2 border-amber-200 bg-amber-50">
+        <span class="text-xl shrink-0">🧠</span>
+        <p class="text-xs font-bold text-amber-800 leading-relaxed">
+          Antes de comenzar, reflexiona honestamente sobre lo que sabes y lo que sientes.
+          Estas respuestas ayudan al sistema a adaptar tu experiencia de aprendizaje.
+          <strong>No hay respuestas correctas o incorrectas.</strong>
+        </p>
+      </div>
     </div>
 
-    <!-- Formulario Metacognitivo -->
-    <div class="space-y-8">
-      <form @submit.prevent="handleSubmit" class="space-y-12 pb-12">
-        
-        <!-- 1. Plan de resolución -->
-        <div class="space-y-4">
-          <label class="block text-sm font-black text-black uppercase tracking-widest">
-            <span class="text-indigo-600 mr-2">01</span> ¿Cómo planeas resolver este desafío?
-          </label>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button 
-              v-for="opt in ['Analizando cada detalle', 'Comparando opciones', 'Buscando pistas clave', 'Siguiendo el paso a paso']" :key="opt"
-              type="button"
-              @click="formData.q1 = opt"
-              class="p-5 rounded-2xl border-2 text-xs font-bold uppercase tracking-widest transition-all text-left flex items-center gap-3"
-              :class="formData.q1 === opt ? 'border-indigo-500 bg-indigo-50 text-indigo-600' : 'border-slate-100 text-black'"
-            >
-              <div class="w-2 h-2 rounded-full" :class="formData.q1 === opt ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-slate-200'"></div>
-              {{ opt }}
-            </button>
+    <!-- Formulario -->
+    <form @submit.prevent="handleSubmit" class="space-y-10 pb-12">
+
+      <!-- JOL 1: Seguridad sin ayuda -->
+      <div class="space-y-4">
+        <label class="block text-sm font-black text-black uppercase tracking-widest">
+          <span class="text-indigo-600 mr-2">01</span>
+          Desde este primer momento, ¿qué tan seguro te sientes de poder realizar el ejercicio
+          <strong>sin pedir ayuda al tutor</strong>?
+        </label>
+        <div class="flex items-center gap-2 md:gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
+          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Nada seguro</span>
+          <div class="flex-1 flex justify-between gap-2">
+            <button
+              v-for="val in 5" :key="val" type="button"
+              @click="formData.jol1 = val"
+              class="flex-1 h-12 rounded-xl border-2 transition-all font-black text-lg"
+              :class="formData.jol1 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black hover:border-indigo-300'"
+            >{{ val }}</button>
+          </div>
+          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Muy seguro</span>
+        </div>
+      </div>
+
+      <!-- JOL 2: Seguridad del tema -->
+      <div class="space-y-4" :class="formData.jol1 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
+        <label class="block text-sm font-black text-black uppercase tracking-widest">
+          <span class="text-indigo-500 mr-2">02</span>
+          ¿Te sientes seguro del <strong>tema</strong> que se va a tratar en SIMECT?
+        </label>
+        <div class="flex items-center gap-2 md:gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
+          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Nada seguro</span>
+          <div class="flex-1 flex justify-between gap-2">
+            <button
+              v-for="val in 5" :key="val" type="button"
+              @click="formData.jol2 = val"
+              class="flex-1 h-12 rounded-xl border-2 transition-all font-black text-lg"
+              :class="formData.jol2 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black hover:border-indigo-300'"
+            >{{ val }}</button>
+          </div>
+          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Muy seguro</span>
+        </div>
+      </div>
+
+      <!-- JOL 3: Tiempo estimado Fase 1 -->
+      <div class="space-y-4" :class="formData.jol2 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
+        <label class="block text-sm font-black text-black uppercase tracking-widest">
+          <span class="text-indigo-500 mr-2">03</span>
+          De acuerdo con la información que sabes hasta el momento, ¿cuánto tiempo crees que podrías
+          demorar realizando la <strong>primera fase</strong>?
+        </label>
+
+        <!-- Alerta informativa sobre la Fase 1 -->
+        <div class="flex items-start gap-3 p-4 rounded-[20px] border-2 border-blue-200 bg-blue-50">
+          <span class="text-lg shrink-0">ℹ️</span>
+          <div>
+            <p class="text-xs font-black text-blue-800 uppercase tracking-wide mb-1">Recuerda: ¿Qué es la Fase 1?</p>
+            <p class="text-xs font-medium text-blue-700 leading-relaxed">
+              La <strong>Fase 1 — Análisis</strong> consta de <strong>2 subfases</strong> con un total de
+              <strong>4 actividades</strong>. Es la primera de 3 fases en SIMECT y se enfoca en identificar
+              hechos, datos y propósitos. Estima solo para <em>esta</em> fase, no para todo el sistema.
+            </p>
           </div>
         </div>
 
-        <!-- 2. ¿Qué espero aprender? -->
-        <div class="space-y-4" :class="formData.q1 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
-          <label class="block text-sm font-black text-black uppercase tracking-widest">
-            <span class="text-indigo-500 mr-2">02</span> ¿Qué espero aprender en esta sesión?
-          </label>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button 
-              v-for="opt in ['Identificar datos precisos', 'Diferenciar hechos', 'Reconocer errores', 'Mejorar mi comprensión']" :key="opt"
-              type="button"
-              @click="formData.q2 = opt"
-              class="p-5 rounded-2xl border-2 text-xs font-bold uppercase tracking-widest transition-all text-left flex items-center gap-3"
-              :class="formData.q2 === opt ? 'border-indigo-500 bg-indigo-50 text-indigo-600' : 'border-slate-100 text-black'"
-            >
-              <div class="w-2 h-2 rounded-full" :class="formData.q2 === opt ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-slate-200'"></div>
-              {{ opt }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 3. Confianza Inicial (1-5) -->
-        <div class="space-y-4" :class="formData.q2 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
-          <label class="block text-sm font-black text-black uppercase tracking-widest">
-            <span class="text-indigo-500 mr-2">03</span> ¿Qué tan seguro(a) me siento sobre este tema?
-          </label>
-          <div class="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
-            <span class="text-[10px] font-black uppercase text-black">Nada</span>
-            <div class="flex-1 flex justify-between px-4">
-              <button
-                v-for="val in 5" :key="val" type="button"
-                @click="formData.q3 = val"
-                class="flex h-12 w-12 items-center justify-center rounded-xl border-2 transition-all font-black text-lg"
-                :class="formData.q3 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black'"
-              >
-                {{ val }}
-              </button>
-            </div>
-            <span class="text-[10px] font-black uppercase text-black">Mucho</span>
-          </div>
-        </div>
-
-        <!-- 4. Estrategias -->
-        <div class="space-y-4" :class="formData.q3 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
-          <label class="block text-sm font-black text-black uppercase tracking-widest">
-            <span class="text-indigo-500 mr-2">04</span> ¿Qué estrategias usaré para aprender mejor?
-          </label>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <button 
-              v-for="opt in ['Tomar notas', 'Leer despacio', 'Releer lo difícil', 'Relacionar ideas']" :key="opt"
-              type="button"
-              @click="formData.q4 = opt"
-              class="p-5 rounded-2xl border-2 text-xs font-bold uppercase tracking-widest transition-all text-left flex items-center gap-3"
-              :class="formData.q4 === opt ? 'border-indigo-500 bg-indigo-50 text-indigo-600' : 'border-slate-100 text-black'"
-            >
-              <div class="w-2 h-2 rounded-full" :class="formData.q4 === opt ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-slate-200'"></div>
-              {{ opt }}
-            </button>
-          </div>
-        </div>
-
-        <!-- 5. Entorno sin distracciones -->
-        <div class="pt-4" :class="formData.q4 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
-          <label class="relative flex items-center gap-4 p-6 rounded-[32px] border-2 border-slate-100 bg-white cursor-pointer group hover:border-indigo-500/50 transition-all shadow-sm">
-            <input 
-              type="checkbox" 
-              v-model="formData.q5" 
-              class="w-6 h-6 rounded-lg border-2 border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
-            >
-            <span class="text-xs font-bold text-black uppercase tracking-[0.1em]">
-              Confirmo que estoy en un entorno sin distracciones
-            </span>
-          </label>
-        </div>
-
-        <!-- Submit -->
-        <div class="pt-10 text-center">
+        <!-- Selector de tiempo -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
           <button
-            type="submit"
-            class="w-full inline-flex items-center justify-center gap-4 rounded-[40px] px-12 py-7 text-sm font-black text-white uppercase tracking-[0.4em] transition-all shadow-2xl disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
-            :class="isFormValid ? 'bg-indigo-600 hover:bg-indigo-500 hover:scale-[1.02] shadow-indigo-500/40' : 'bg-slate-300 text-black'"
-            :disabled="!isFormValid || isSubmitting"
+            v-for="opt in tiempoOpciones" :key="opt.value"
+            type="button"
+            @click="formData.jol3 = opt.value"
+            class="p-4 rounded-2xl border-2 text-xs font-bold uppercase tracking-widest transition-all text-center"
+            :class="formData.jol3 === opt.value
+              ? 'border-indigo-500 bg-indigo-50 text-indigo-600'
+              : 'border-slate-100 text-black hover:border-indigo-300'"
           >
-            {{ isSubmitting ? 'Iniciando Sesión...' : 'Comenzar Aprendizaje' }}
-            <svg v-if="!isSubmitting" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
+            <span class="block text-lg font-black mb-1">{{ opt.icon }}</span>
+            {{ opt.label }}
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <!-- JOL 4: Atención a números -->
+      <div class="space-y-4" :class="formData.jol3 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
+        <label class="block text-sm font-black text-black uppercase tracking-widest">
+          <span class="text-indigo-500 mr-2">04</span>
+          ¿Qué tan acostumbrado estás a prestarle atención a los
+          <strong>números y unidades de medida exactas</strong>?
+        </label>
+        <div class="flex items-center gap-2 md:gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
+          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Nada</span>
+          <div class="flex-1 flex justify-between gap-2">
+            <button
+              v-for="val in 5" :key="val" type="button"
+              @click="formData.jol4 = val"
+              class="flex-1 h-12 rounded-xl border-2 transition-all font-black text-lg"
+              :class="formData.jol4 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black hover:border-indigo-300'"
+            >{{ val }}</button>
+          </div>
+          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Mucho</span>
+        </div>
+      </div>
+
+      <!-- JOL 5: Separar propuesta del porqué -->
+      <div class="space-y-4" :class="formData.jol4 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
+        <label class="block text-sm font-black text-black uppercase tracking-widest">
+          <span class="text-indigo-500 mr-2">05</span>
+          ¿Qué tan bueno eres para separar <strong>lo que una persona propone hacer</strong>
+          del <strong>porqué dice que hay que hacerlo</strong>?
+        </label>
+        <div class="flex items-center gap-2 md:gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
+          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">No soy bueno</span>
+          <div class="flex-1 flex justify-between gap-2">
+            <button
+              v-for="val in 5" :key="val" type="button"
+              @click="formData.jol5 = val"
+              class="flex-1 h-12 rounded-xl border-2 transition-all font-black text-lg"
+              :class="formData.jol5 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black hover:border-indigo-300'"
+            >{{ val }}</button>
+          </div>
+          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Muy bueno</span>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="pt-10 text-center">
+        <button
+          type="submit"
+          class="w-full inline-flex items-center justify-center gap-4 rounded-[40px] px-12 py-7 text-sm font-black text-white uppercase tracking-[0.4em] transition-all shadow-2xl disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed"
+          :class="isFormValid ? 'bg-indigo-600 hover:bg-indigo-500 hover:scale-[1.02] shadow-indigo-500/40' : 'bg-slate-300 text-black'"
+          :disabled="!isFormValid || isSubmitting"
+        >
+          {{ isSubmitting ? 'Iniciando Sesión...' : 'Comenzar — Ver Historia' }}
+          <svg v-if="!isSubmitting" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue'
 
+const props = defineProps<{
+  onboardingData?: { comprensionSIMECT: number; familiaridadTema: number } | null
+}>()
+
 const emit = defineEmits(['submit'])
 
+const tiempoOpciones = [
+  { value: 15,  label: 'Menos de 15 min', icon: '⚡' },
+  { value: 30,  label: '15 a 30 min',     icon: '🕐' },
+  { value: 60,  label: '30 a 60 min',     icon: '🕑' },
+  { value: 90,  label: 'Más de 1 hora',   icon: '⏳' }
+]
+
 const formData = reactive({
-  q1: '', // Plan de resolución
-  q2: '', // Expectativa de aprendizaje
-  q3: 0,  // Confianza inicial 1-5
-  q4: '', // Estrategia
-  q5: false // Entorno sin distracciones (antes q6)
+  jol1: 0,   // Seguridad sin ayuda
+  jol2: 0,   // Seguridad del tema
+  jol3: 0,   // Tiempo estimado Fase 1 (minutos)
+  jol4: 0,   // Atención a números
+  jol5: 0    // Separar propuesta del porqué
 })
 
 const isSubmitting = ref(false)
 
 const completedCount = computed(() => {
   let count = 0
-  if (formData.q1) count++
-  if (formData.q2) count++
-  if (formData.q3 > 0) count++
-  if (formData.q4) count++
-  if (formData.q5) count++
+  if (formData.jol1 > 0) count++
+  if (formData.jol2 > 0) count++
+  if (formData.jol3 > 0) count++
+  if (formData.jol4 > 0) count++
+  if (formData.jol5 > 0) count++
   return count
 })
 
@@ -166,9 +216,17 @@ const isFormValid = computed(() => completedCount.value === 5)
 const handleSubmit = async () => {
   if (!isFormValid.value) return
   isSubmitting.value = true
-  await new Promise(r => setTimeout(r, 1200))
-  emit('submit', { 
-    ...formData,
+  await new Promise(r => setTimeout(r, 1000))
+  emit('submit', {
+    // JOL nuevas
+    seguridadSinAyuda:    formData.jol1,
+    seguridadTema:        formData.jol2,
+    tiempoEstimadoFase1:  formData.jol3,
+    atencionNumeros:      formData.jol4,
+    separacionArgumentos: formData.jol5,
+    // Datos del onboarding (pasados como prop)
+    comprensionSIMECT:   props.onboardingData?.comprensionSIMECT ?? null,
+    familiaridadTema:    props.onboardingData?.familiaridadTema ?? null,
     timestamp: new Date().toISOString()
   })
   isSubmitting.value = false

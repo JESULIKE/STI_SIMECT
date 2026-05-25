@@ -17,6 +17,8 @@ import TextMarkupActivity from '~/components/activities/types/TextMarkupActivity
 import PointsAnimation from '~/components/gamification/PointsAnimation.vue'
 import LevelUpCelebration from '~/components/celebrations/LevelUpCelebration.vue'
 import BadgeUnlocked from '~/components/celebrations/BadgeUnlocked.vue'
+import WelcomeOnboarding from '~/components/onboarding/WelcomeOnboarding.vue'
+import LevelAnnouncement from '~/components/onboarding/LevelAnnouncement.vue'
 
 definePageMeta({ layout: 'main' })
 
@@ -37,9 +39,14 @@ const {
   currentActivityData,
   lastEvaluation,
   narrativeChapterData,
+  lastChapterData,
+  onboardingData,
   activityManager,
   loadNextActivity,
+  onOnboardingCompleted,
   onChecklistCompleted,
+  dismissLevelAnnouncement,
+  reopenNarrative,
   startCurrentActivity,
   submitCurrentActivity,
   advanceFromFeedback,
@@ -86,36 +93,61 @@ watch(currentActivityData, () => {
 <template>
   <div class="font-sans">
     
-    <!-- Pantalla de Error Amigable (Sección 12.4) -->
+    <!-- Onboarding de Primer Ingreso (bienvenida + contextualización) -->
+    <WelcomeOnboarding
+      v-if="currentState === 'ONBOARDING'"
+      @complete="onOnboardingCompleted"
+    />
+
+    <!-- Anuncio de Nivel asignado por JOL -->
+    <LevelAnnouncement
+      v-if="currentState === 'LEVEL_ANNOUNCEMENT' && studentStore.progress.assignedLevel"
+      :nivel="studentStore.progress.assignedLevel"
+      @continue="dismissLevelAnnouncement"
+    />
+
+    <!-- Pantalla de Error Amigable -->
     <UiFriendlyError v-if="!!error" :message="error" />
 
     <!-- Superposiciones de Celebración y Narrativa -->
-    <LevelUpCelebration 
-      v-if="currentState === 'CELEBRATING'" 
-      @continue="finishCelebration" 
+    <LevelUpCelebration
+      v-if="currentState === 'CELEBRATING'"
+      @continue="finishCelebration"
     />
 
-    <ChapterViewer 
-      v-if="currentState === 'READING_NARRATIVE' && narrativeChapterData" 
-      :chapterData="narrativeChapterData" 
-      @complete="finishNarrative" 
+    <ChapterViewer
+      v-if="currentState === 'READING_NARRATIVE' && narrativeChapterData"
+      :chapterData="narrativeChapterData"
+      @complete="finishNarrative"
     />
 
-    <!-- Modal de Nueva Insignia (una por una) -->
+    <!-- Modal de Nueva Insignia -->
     <BadgeUnlocked
       v-if="currentBadge"
       :badge="currentBadge"
       @close="dismissBadge"
     />
 
-    <!-- Animación de puntos voladores -->
-    <PointsAnimation 
+    <!-- Animación de puntos -->
+    <PointsAnimation
       :points="lastEvaluation?.scoreDetails?.totalGained || 0"
       :show="currentState === 'FEEDBACK' || currentState === 'REFLECTION_PENDING'"
     />
 
+    <!-- Botón flotante Ver Historia (siempre visible durante la actividad) -->
+    <Transition name="slide-fade">
+      <button
+        v-if="lastChapterData && (currentState === 'ACTIVITY_PRESENTATION' || currentState === 'ACTIVITY_IN_PROGRESS')"
+        @click="reopenNarrative"
+        class="fixed bottom-28 left-8 z-[90] flex items-center gap-2 bg-white border-2 border-slate-200 text-black font-black text-[10px] uppercase tracking-widest px-4 py-3 rounded-2xl shadow-xl hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+      >
+        <span class="text-base">📖</span>
+        Ver Historia
+      </button>
+    </Transition>
+
     <!-- Contenedor Principal Unificado -->
-    <main class="max-w-5xl mx-auto px-4 py-8 md:py-12 relative" v-show="currentState !== 'CELEBRATING' && currentState !== 'READING_NARRATIVE'">
+    <main class="max-w-5xl mx-auto px-4 py-8 md:py-12 relative" v-show="currentState !== 'CELEBRATING' && currentState !== 'READING_NARRATIVE' && currentState !== 'ONBOARDING' && currentState !== 'LEVEL_ANNOUNCEMENT'">
       
       <!-- Cargando Activity Data -->
       <div v-if="!currentActivityData && currentState !== 'CHECKLIST_PENDING'" class="flex flex-col items-center justify-center py-20 text-center space-y-6">
@@ -155,15 +187,19 @@ watch(currentActivityData, () => {
           }"
           :total-points="studentStore.progress.totalPoints"
           :max-score="currentActivityData?.puntajeMaximo"
+          :student-level="studentStore.progress.assignedLevel"
           v-model:priorConfidence="activityManager.priorConfidence.value"
           @start="startCurrentActivity"
           @submit="submitCurrentActivity(studentAnswer, activityManager.priorConfidence.value)"
           @pauseMetacognitiva="studentStore.requestChecklist('He tenido dificultades con esta actividad')"
           @request-help="handleRequestHelp"
         >
-          <!-- Slot 0: Checklist -->
+          <!-- Slot 0: Checklist JOL -->
           <template #checklist>
-            <ChecklistInicial @submit="onChecklistCompleted" />
+            <ChecklistInicial
+              :onboarding-data="onboardingData"
+              @submit="onChecklistCompleted"
+            />
           </template>
 
           <!-- Slot 1: El Ejercicio (Dinámico según el tipo) -->

@@ -83,6 +83,9 @@ model StudentProfile {
   currentStreak  Int       @default(0)
   lastActivityAt DateTime?
 
+  /// Nivel adaptativo actual del estudiante (calculado por JOL + ajustado por respuestas)
+  nivelActual Level @default(BASIC)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -182,6 +185,21 @@ model MetacognitionChecklist {
   studentProfileId String
   sessionId        String? // Si se vincula a una sesión particular
 
+  // ── Datos del Onboarding (primera sesión) ──────────────────────
+  comprensionSIMECT  Int? // Estrellas 1-5: ¿Comprendes qué es SIMECT?
+  familiaridadTema   Int? // Escala 1-5: conocimiento previo del tema (inundaciones Córdoba)
+
+  /// Nivel inicial calculado a partir de los JOL
+  nivelAsignado Level? // BASIC / INTERMEDIATE / ADVANCED
+
+  // ── Preguntas JOL de Planeación Metacognitiva ─────────────────
+  seguridadSinAyuda      Int? // JOL 1: ¿Qué tan seguro sin pedir ayuda? (1-5)
+  seguridadTema          Int? // JOL 2: ¿Te sientes seguro del tema? (1-5)
+  tiempoEstimadoFase1    Int? // JOL 3: Tiempo estimado para Fase 1 (minutos)
+  atencionNumeros        Int? // JOL 4: ¿Qué tan acostumbrado a datos exactos? (1-5)
+  separacionArgumentos   Int? // JOL 5: ¿Qué tan bueno separando propuesta del porqué? (1-5)
+
+  // ── Campos legacy (mantener compatibilidad) ───────────────────
   queSe                   String? @db.Text
   queEsperoAprender       String? @db.Text
   confianzaInicial        Int? // Escala 1-5

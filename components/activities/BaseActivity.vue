@@ -8,13 +8,19 @@ const props = defineProps<{
   state: 'idle' | 'in_progress' | 'evaluating' | 'finished' | 'checklist'
   maxScore?: number
   priorConfidence: number | null
-  // Datos de progreso para las 3 barras (Sección 9.4)
   progress: {
-    activity: number // 0-100 (ítems respondidos)
-    phase: number    // 0-100 (actividades completadas)
-    level: number    // 0-100 (total nivel)
+    activity: number
+    phase: number
+    level: number
   }
   totalPoints: number
+  // Nivel adaptativo del estudiante (para badge en header)
+  studentLevel?: {
+    code: string
+    label: string
+    emoji: string
+    color: string
+  } | null
 }>()
 
 const emit = defineEmits(['start', 'submit', 'pauseMetacognitiva', 'update:priorConfidence', 'requestHelp'])
@@ -86,8 +92,21 @@ const levelBarGlow = computed(() => props.progress.level >= 90)
           </div>
         </div>
 
-        <!-- Timer -->
-        <div class="hidden lg:flex items-center gap-4">
+        <!-- Timer + Badge de Nivel -->
+        <div class="hidden lg:flex items-center gap-3">
+          <!-- Badge de nivel adaptativo -->
+          <div
+            v-if="studentLevel"
+            class="flex items-center gap-2 px-4 py-2 rounded-2xl border-2 font-black text-xs uppercase tracking-widest"
+            :class="{
+              'bg-emerald-50 border-emerald-200 text-emerald-700': studentLevel.color === 'emerald',
+              'bg-indigo-50 border-indigo-200 text-indigo-700': studentLevel.color === 'indigo',
+              'bg-red-50 border-red-200 text-red-700': studentLevel.color === 'red',
+            }"
+          >
+            <span>{{ studentLevel.emoji }}</span>
+            <span>Nivel {{ studentLevel.label }}</span>
+          </div>
           <div class="px-4 py-2 bg-slate-50 rounded-2xl border-2 border-slate-100">
             <span class="text-xs font-mono text-slate-800 font-bold tracking-tighter">{{ timeFormatted }}</span>
           </div>

@@ -4,7 +4,9 @@ import { useActivity } from './useActivity'
 import { useGamification } from './useGamification'
 
 export type SessionState = 
-  | 'CHECKLIST_PENDING' 
+  | 'ONBOARDING'          // Primera vez: bienvenida + contextualización
+  | 'CHECKLIST_PENDING'   // Planeación metacognitiva JOL
+  | 'LEVEL_ANNOUNCEMENT'  // Muestra el nivel asignado por JOL
   | 'ACTIVITY_PRESENTATION' 
   | 'ACTIVITY_IN_PROGRESS' 
   | 'EVALUATING' 
@@ -39,15 +41,34 @@ function markSubPhaseSeen(sp: string) {
 export function useLearningSession() {
   const studentStore = useStudentStore()
   const gamification = useGamification()
-  
+
+  /**
+   * Determina el estado inicial:
+   * - Si el checklist está pendiente Y es el primer ingreso (0 actividades completadas)
+   *   → ONBOARDING (bienvenida + contextualización)
+   * - Si el checklist está pendiente pero ya hay actividades previas
+   *   → CHECKLIST_PENDING (planeación de sesión)
+   * - De lo contrario → ACTIVITY_PRESENTATION
+   */
+  const isFirstTimeStudent = studentStore.isChecklistPending && studentStore.progress.activitiesCompleted === 0
+
   const currentState = ref<SessionState>(
-    studentStore.isChecklistPending ? 'CHECKLIST_PENDING' : 'ACTIVITY_PRESENTATION'
+    isFirstTimeStudent
+      ? 'ONBOARDING'
+      : studentStore.isChecklistPending
+        ? 'CHECKLIST_PENDING'
+        : 'ACTIVITY_PRESENTATION'
   )
   
+  // Datos del onboarding (se pasan al checklist para guardarse juntos en la BD)
+  const onboardingData = ref<{ comprensionSIMECT: number; familiaridadTema: number } | null>(null)
+
   const currentActivityData = ref<any>(null)
   const currentActivityId = computed(() => currentActivityData.value?.id || '')
   const lastEvaluation = ref<any>(null)
   const narrativeChapterData = ref<any>(null)
+  // Guarda el último capítulo leído para poder reabrirlo
+  const lastChapterData = ref<any>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -63,26 +84,16 @@ export function useLearningSession() {
    */
   const tryShowSubPhaseContext = async (subPhase: string): Promise<boolean> => {
     const seen = getSeenSubPhases()
-    console.log(`[Session] tryShowSubPhaseContext para subfase: ${subPhase}. Vistas en esta sesión:`, [...seen])
-    if (seen.has(subPhase)) {
-      console.log(`[Session] La subfase ${subPhase} ya fue vista en esta sesión, omitiendo contexto.`)
-      return false
-    }
+    if (seen.has(subPhase)) return false
 
     try {
-      console.log(`[Session] Cargando contexto narrativo para subfase ${subPhase} desde el servidor...`)
-      const response: any = await $fetch('/api/narrative/chapter', {
-        query: { subPhase }
-      })
+      const response: any = await $fetch('/api/narrative/chapter', { query: { subPhase } })
       if (response.success && response.isContext && response.data) {
-        console.log(`[Session] Contexto obtenido con éxito para ${subPhase}:`, response.data)
         narrativeChapterData.value = response.data
+        lastChapterData.value = response.data  // Guardar para poder reabrir
         markSubPhaseSeen(subPhase)
         currentState.value = 'READING_NARRATIVE'
-        console.log(`[Session] Estado cambiado a READING_NARRATIVE`)
         return true
-      } else {
-        console.warn(`[Session] Respuesta del servidor no válida para contexto de ${subPhase}:`, response)
       }
     } catch (e) {
       console.warn('[Session] No se pudo cargar el contexto narrativo para subfase', subPhase, e)
@@ -121,29 +132,26 @@ export function useLearningSession() {
       if (response.progressBars) {
         studentStore.updateProgressBars(response.progressBars)
       }
-      
+
       if (response.firstActivity) {
-        console.log('Actividad cargada desde metadata:', response.firstActivity.id)
         currentActivityData.value = response.firstActivity
         activityManager.resetTimer()
-        console.log('Actividad lista:', currentActivityData.value.titulo)
 
-        // ── Detectar si entramos a una subfase nueva y mostrar su contexto ────
+        // Sincronizar nivel adaptativo si viene en la respuesta
+        if (response.studentLevel) {
+          studentStore.setAssignedLevel(response.studentLevel)
+        }
+
         const newSubPhase = response.activeSubPhase as string | null
-        console.log(`[Session] Comparando subfases. Nueva activa: ${newSubPhase}, Anterior activa registrada: ${currentActiveSubPhase.value}`)
         if (newSubPhase && newSubPhase !== currentActiveSubPhase.value) {
-          console.log(`[Session] ¡Nueva subfase detectada! ${newSubPhase} (anterior: ${currentActiveSubPhase.value || 'ninguna'})`)
           currentActiveSubPhase.value = newSubPhase
-          // tryShowSubPhaseContext cambiará el estado a READING_NARRATIVE si corresponde.
-          // Si devuelve false (ya visto), el llamador pondrá ACTIVITY_PRESENTATION.
           const showed = await tryShowSubPhaseContext(newSubPhase)
-          console.log(`[Session] tryShowSubPhaseContext de ${newSubPhase} devolvió:`, showed)
-          if (showed) return // el flujo continúa desde finishNarrative
+          if (showed) return
         }
       } else {
-        console.info('El usuario ha completado todas las actividades disponibles para este nivel/fase.')
         error.value = "¡Felicidades! Has completado todos los desafíos de esta etapa. Pronto desbloquearemos nuevas misiones."
       }
+
     } catch (e: any) {
       console.error("Fallo crítico cargando sesión:", e)
       if (e.name === 'AbortError') {
@@ -157,33 +165,64 @@ export function useLearningSession() {
     }
   }
 
+  /**
+   * Llamado cuando el wizard de Onboarding termina.
+   * Guarda los datos del onboarding y transiciona al Checklist JOL.
+   */
+  const onOnboardingCompleted = (data: { comprensionSIMECT: number; familiaridadTema: number }) => {
+    console.log('[Session] Onboarding completado. Datos:', data)
+    onboardingData.value = data
+    currentState.value = 'CHECKLIST_PENDING'
+  }
+
   const onChecklistCompleted = async (data: any) => {
-    console.log('Evento de checklist completado recibido. Guardando y actualizando estado...')
     try {
-      // 1. Guardar en DB (metacognición)
-      await $fetch('/api/student/metacognition/checklist', {
+      // Guardar en DB: JOL + datos de onboarding. El endpoint ahora devuelve el nivel.
+      const result: any = await $fetch('/api/student/metacognition/checklist', {
         method: 'POST',
-        body: data
+        body: {
+          ...data,
+          comprensionSIMECT: data.comprensionSIMECT ?? onboardingData.value?.comprensionSIMECT ?? null,
+          familiaridadTema:  data.familiaridadTema  ?? onboardingData.value?.familiaridadTema  ?? null,
+        }
       })
       
-      // 2. Actualizar estado local en el store
       studentStore.completeChecklist()
-      
-      // 3. Cargar próxima actividad (puede cambiar a READING_NARRATIVE si es subfase nueva)
-      await loadNextActivity()
-      
-      // 4. Cambiar estado visual solo si loadNextActivity no puso otro estado
-      if (currentState.value === 'CHECKLIST_PENDING') {
-        currentState.value = 'ACTIVITY_PRESENTATION'
+
+      // Si la API devuelve nivel, mostramos el anuncio de nivel
+      if (result?.nivel) {
+        studentStore.setAssignedLevel(result.nivel)
+        currentState.value = 'LEVEL_ANNOUNCEMENT'
+      } else {
+        // Fallback sin nivel
+        await loadNextActivity()
+        if (currentState.value === 'CHECKLIST_PENDING') currentState.value = 'ACTIVITY_PRESENTATION'
       }
     } catch (e) {
       console.error('Error al guardar planificación:', e)
-      // Fallback para no bloquear al estudiante si falla la red/DB
       studentStore.completeChecklist()
       await loadNextActivity()
-      if (currentState.value === 'CHECKLIST_PENDING') {
-        currentState.value = 'ACTIVITY_PRESENTATION'
-      }
+      if (currentState.value === 'CHECKLIST_PENDING') currentState.value = 'ACTIVITY_PRESENTATION'
+    }
+  }
+
+  /**
+   * El estudiante dismiss el anuncio de nivel → cargar primera actividad (con historia).
+   */
+  const dismissLevelAnnouncement = async () => {
+    await loadNextActivity()
+    if (currentState.value === 'LEVEL_ANNOUNCEMENT') {
+      currentState.value = 'ACTIVITY_PRESENTATION'
+    }
+  }
+
+  /**
+   * Reabre el contexto narrativo de la subfase actual para que el estudiante pueda releerlo.
+   */
+  const reopenNarrative = () => {
+    if (lastChapterData.value) {
+      narrativeChapterData.value = lastChapterData.value
+      currentState.value = 'READING_NARRATIVE'
     }
   }
 
@@ -220,9 +259,13 @@ export function useLearningSession() {
       
       studentStore.addPoints(result.decision.scoreDetails?.totalGained || 0)
       
-      // Actualizar barras de progreso dinámicas desde el servidor
       if (result.decision.progressBars) {
         studentStore.updateProgressBars(result.decision.progressBars)
+      }
+
+      // Sincronizar nivel adaptativo si cambió
+      if (result.decision.currentLevel) {
+        studentStore.setAssignedLevel(result.decision.currentLevel)
       }
 
       activityManager.state.value = 'finished'
@@ -305,8 +348,8 @@ export function useLearningSession() {
   }
 
   // Init
-  if (currentState.value === 'CHECKLIST_PENDING') {
-    console.log('[Session] Planificación inicial pendiente. Limpiando subfases vistas de sessionStorage para reiniciar el flujo.')
+  if (currentState.value === 'ONBOARDING' || currentState.value === 'CHECKLIST_PENDING') {
+    console.log('[Session] Primer ingreso o sesión nueva. Limpiando subfases vistas de sessionStorage.')
     if (typeof window !== 'undefined') {
       try {
         sessionStorage.removeItem('simect_seen_subphases')
@@ -324,9 +367,14 @@ export function useLearningSession() {
     currentActivityData,
     lastEvaluation,
     narrativeChapterData,
+    lastChapterData,
+    onboardingData,
     activityManager,
     loadNextActivity,
+    onOnboardingCompleted,
     onChecklistCompleted,
+    dismissLevelAnnouncement,
+    reopenNarrative,
     startCurrentActivity,
     submitCurrentActivity,
     completeReflection,

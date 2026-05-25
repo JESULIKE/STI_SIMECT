@@ -1,6 +1,7 @@
 import { prisma } from '~/server/utils/prisma'
+import { NIVEL_LABELS } from '~/server/utils/levelEngine'
 
-const ACTIVITIES_PER_SUBPHASE = 6
+const ACTIVITIES_PER_SUBPHASE = 1
 
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event)
@@ -14,11 +15,12 @@ export default defineEventHandler(async (event) => {
     const profile = await prisma.studentProfile.findUnique({
       where: { id: studentProfileId },
       include: {
-        earnedBadges: {
-          include: { badge: true }
-        }
+        earnedBadges: { include: { badge: true } }
       }
     })
+
+    // nivelActual viene del campo en StudentProfile
+    const nivelActual = (profile as any)?.nivelActual || 'BASIC'
 
     if (!profile) {
       throw createError({ statusCode: 404, statusMessage: 'Perfil no encontrado' })
@@ -62,23 +64,24 @@ export default defineEventHandler(async (event) => {
       }
     ]
 
+    // Conjunto de subfases completadas (por código)
+    const completedSubPhases = new Set(
+      successfulAttempts.map(a => a.activity.subPhase).filter(Boolean) as string[]
+    )
+
     // Calcular el progreso de cada fase y subfase desde los intentos reales
     const phases = phaseDefinitions.map((p, phaseIdx) => {
       const subPhasesData = p.subPhases.map((sp, spIdx) => {
-        const completedInSp = successfulAttempts.filter(
-          a => a.activity.fase === p.code && a.activity.subPhase === sp.code
-        ).length
-
-        const percent = Math.min((completedInSp / ACTIVITIES_PER_SUBPHASE) * 100, 100)
+        const isCompleted = completedSubPhases.has(sp.code)
+        const completedInSp = isCompleted ? 1 : 0
+        const percent = isCompleted ? 100 : 0
 
         // Una subfase está desbloqueada si:
         // - Es la primera de la primera fase (siempre desbloqueada)
         // - O la subfase anterior está completa
         let status: string
-        if (percent === 100) {
+        if (isCompleted) {
           status = 'Completado'
-        } else if (completedInSp > 0) {
-          status = 'En curso'
         } else {
           // Verificar si está desbloqueada
           const isFirstSubPhase = phaseIdx === 0 && spIdx === 0
@@ -87,15 +90,14 @@ export default defineEventHandler(async (event) => {
           } else {
             // La anterior debe estar completada para desbloquearse
             const prevSpCompleted = spIdx > 0
-              ? successfulAttempts.filter(
-                  a => a.activity.fase === p.code && a.activity.subPhase === p.subPhases[spIdx - 1].code
-                ).length >= ACTIVITIES_PER_SUBPHASE
+              ? completedSubPhases.has(p.subPhases[spIdx - 1].code)
               : phaseIdx > 0
-                ? successfulAttempts.filter(
-                    a => a.activity.fase === phaseDefinitions[phaseIdx - 1].code
-                  ).length >= ACTIVITIES_PER_SUBPHASE * 2
+                ? phaseDefinitions[phaseIdx - 1].subPhases.every(prevSp => completedSubPhases.has(prevSp.code))
                 : false
+            status = prevSpCompleted ? 'En curso' : 'Bloqueado' // Si está desbloqueada y no completada, está en curso o pendiente. Usemos En curso/Pendiente.
+            // Para mantener la lógica anterior:
             status = prevSpCompleted ? 'Pendiente' : 'Bloqueado'
+            if (prevSpCompleted && !isCompleted) status = 'En curso'
           }
         }
 
@@ -109,8 +111,8 @@ export default defineEventHandler(async (event) => {
         }
       })
 
-      const phaseCompleted = successfulAttempts.filter(a => a.activity.fase === p.code).length
-      const phaseTotal = p.subPhases.length * ACTIVITIES_PER_SUBPHASE
+      const phaseCompleted = p.subPhases.filter(sp => completedSubPhases.has(sp.code)).length
+      const phaseTotal = p.subPhases.length
       const phasePercent = Math.min((phaseCompleted / phaseTotal) * 100, 100)
 
       let phaseStatus: string
@@ -118,9 +120,9 @@ export default defineEventHandler(async (event) => {
       else if (phaseCompleted > 0) phaseStatus = 'En curso'
       else if (phaseIdx === 0) phaseStatus = 'En curso'
       else {
-        const prevPhaseComplete = successfulAttempts.filter(
-          a => a.activity.fase === phaseDefinitions[phaseIdx - 1].code
-        ).length >= phaseDefinitions[phaseIdx - 1].subPhases.length * ACTIVITIES_PER_SUBPHASE
+        const prevPhaseComplete = phaseDefinitions[phaseIdx - 1].subPhases.every(
+          sp => completedSubPhases.has(sp.code)
+        )
         phaseStatus = prevPhaseComplete ? 'Pendiente' : 'Bloqueado'
       }
 
@@ -134,11 +136,20 @@ export default defineEventHandler(async (event) => {
       }
     })
 
+    const nivelInfo = NIVEL_LABELS[nivelActual as keyof typeof NIVEL_LABELS]
+
     return {
       points: profile.totalPoints,
       streak: profile.currentStreak,
       phases,
-      badges: profile.earnedBadges.map(eb => eb.badge)
+      badges: profile.earnedBadges.map(eb => eb.badge),
+      // Nivel adaptativo actual del estudiante
+      nivelActual: {
+        code: nivelActual,
+        label: nivelInfo?.label || nivelActual,
+        emoji: nivelInfo?.emoji || '🟢',
+        color: nivelInfo?.color || 'emerald'
+      }
     }
 
   } catch (error) {
