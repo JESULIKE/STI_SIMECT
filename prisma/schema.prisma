@@ -40,6 +40,12 @@ enum ActivityType {
   ARGUMENT_BUILDER
   FALLACY_IDENTIFICATION
   OPEN_JUDGMENT
+  FILL_IN_THE_BLANK
+  MATCHING
+  ARROW_MATCHING
+  CLASSIFICATION
+  TRAFFIC_LIGHT
+  SEQUENCE_ORDER
 }
 
 enum ErrorType {
@@ -96,6 +102,7 @@ model StudentProfile {
   attempts      ActivityAttempt[]
   checklists    MetacognitionChecklist[]
   reflections   Reflection[]
+  monitorings   MetacognitionMonitoring[]
   earnedBadges  EarnedBadge[]
   errorPatterns ErrorPattern[]
 
@@ -191,6 +198,7 @@ model MetacognitionChecklist {
 
   /// Nivel inicial calculado a partir de los JOL
   nivelAsignado Level? // BASIC / INTERMEDIATE / ADVANCED
+  fase          Phase  @default(ANALYSIS)
 
   // ── Preguntas JOL de Planeación Metacognitiva ─────────────────
   seguridadSinAyuda      Int? // JOL 1: ¿Qué tan seguro sin pedir ayuda? (1-5)
@@ -236,6 +244,25 @@ model Reflection {
 
   studentProfile  StudentProfile   @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
   activityAttempt ActivityAttempt? @relation(fields: [activityAttemptId], references: [id], onDelete: SetNull)
+}
+
+/// Monitoreo metacognitivo intermedio realizado a mitad de fase (Fase 1 Subfase 1.1)
+model MetacognitionMonitoring {
+  id                  String   @id @default(uuid())
+  studentProfileId    String
+  subPhase            String   // "1.1"
+  
+  atencionDetalle     Int?     // Escala 1-5: Atención a números exactos
+  filtroInformacion   Int?     // Escala 1-5: Filtro de trampas
+  conexionPlaneacion  Int?     // Escala 1-5: Mantener estrategia planeada
+  esfuerzoCognitivo   Int?     // Escala 1-5: Esfuerzo mental
+  confianzaActual     Int?     // Escala 1-5: Comprensión actual del problema
+
+  createdAt           DateTime @default(now())
+
+  studentProfile StudentProfile @relation(fields: [studentProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([studentProfileId, subPhase])
 }
 
 

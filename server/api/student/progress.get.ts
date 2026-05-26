@@ -1,7 +1,7 @@
 import { prisma } from '~/server/utils/prisma'
 import { NIVEL_LABELS } from '~/server/utils/levelEngine'
 
-const ACTIVITIES_PER_SUBPHASE = 1
+const ACTIVITIES_PER_SUBPHASE = 2
 
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event)
@@ -64,17 +64,28 @@ export default defineEventHandler(async (event) => {
       }
     ]
 
-    // Conjunto de subfases completadas (por código)
-    const completedSubPhases = new Set(
-      successfulAttempts.map(a => a.activity.subPhase).filter(Boolean) as string[]
-    )
+    // Contar cuántas actividades completó por subfase
+    const subPhaseCounts: Record<string, number> = {}
+    for (const attempt of successfulAttempts) {
+      if (attempt.activity.subPhase) {
+        subPhaseCounts[attempt.activity.subPhase] = (subPhaseCounts[attempt.activity.subPhase] || 0) + 1
+      }
+    }
+
+    // Conjunto de subfases completadas (por código) si tienen >= ACTIVITIES_PER_SUBPHASE
+    const completedSubPhases = new Set<string>()
+    for (const sp in subPhaseCounts) {
+      if (subPhaseCounts[sp] >= ACTIVITIES_PER_SUBPHASE) {
+        completedSubPhases.add(sp)
+      }
+    }
 
     // Calcular el progreso de cada fase y subfase desde los intentos reales
     const phases = phaseDefinitions.map((p, phaseIdx) => {
       const subPhasesData = p.subPhases.map((sp, spIdx) => {
         const isCompleted = completedSubPhases.has(sp.code)
-        const completedInSp = isCompleted ? 1 : 0
-        const percent = isCompleted ? 100 : 0
+        const completedInSp = Math.min(subPhaseCounts[sp.code] || 0, ACTIVITIES_PER_SUBPHASE)
+        const percent = (completedInSp / ACTIVITIES_PER_SUBPHASE) * 100
 
         // Una subfase está desbloqueada si:
         // - Es la primera de la primera fase (siempre desbloqueada)

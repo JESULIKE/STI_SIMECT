@@ -11,11 +11,11 @@ const showContinueButton = ref(false)
 
 // Categorización por colores (Sección 9.5)
 const feedbackType = computed(() => {
-  if (!props.decision || !props.decision.scoreDetails) return 'good' // Valor por defecto seguro
+  if (!props.decision || !props.decision.scoreDetails) return 'good'
   const score = props.decision.scoreDetails.basePoints
   if (score >= 90) return 'excellent'
-  if (score >= 70) return 'good'
-  if (score >= 50) return 'improvement'
+  if (score >= 50) return 'good'
+  if (score >= 25) return 'improvement'
   return 'difficulties'
 })
 
@@ -58,6 +58,12 @@ const config = computed(() => {
   return types[feedbackType.value]
 })
 
+// Desglose ítem a ítem
+const itemBreakdown = computed(() => props.decision?.itemBreakdown || [])
+const hasBreakdown = computed(() => itemBreakdown.value.length > 0)
+const correctCount = computed(() => itemBreakdown.value.filter((i: any) => i.isCorrect).length)
+const totalCount = computed(() => itemBreakdown.value.length)
+
 onMounted(() => {
   if (config.value.showConfetti) {
     console.log('¡Disparando confeti pedagógico!')
@@ -89,7 +95,7 @@ onMounted(() => {
           <h2 class="text-4xl font-black italic uppercase tracking-widest" :class="config.text">{{ config.label }}</h2>
         </div>
 
-        <!-- Puntos Ganados (Puntos Flotantes - Sección 9.5) -->
+        <!-- Puntos Ganados -->
         <div class="relative py-6 px-10 bg-white rounded-[32px] shadow-2xl border-2 border-slate-100 animate-scale-in">
           <div class="absolute -top-12 left-1/2 -translate-x-1/2 text-4xl font-black text-indigo-600 animate-float-up">
             +{{ decision.scoreDetails.totalGained }}
@@ -110,14 +116,41 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Mensaje Explicativo Contextualizado (Paso 14 - Sección 8.2) -->
+        <!-- ══ DESGLOSE POR ÍTEM (solo actividades multi-ítem) ══ -->
+        <div v-if="hasBreakdown" class="w-full max-w-lg space-y-3">
+          <div class="flex items-center justify-between px-2">
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Revisión de tu respuesta</p>
+            <span class="text-[10px] font-black px-3 py-1 rounded-full"
+              :class="correctCount === totalCount ? 'bg-emerald-100 text-emerald-700' : correctCount >= totalCount / 2 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'">
+              {{ correctCount }}/{{ totalCount }} correctas
+            </span>
+          </div>
+
+          <div v-for="item in itemBreakdown" :key="item.itemId"
+            class="flex items-start gap-3 p-4 rounded-2xl border-2 text-left"
+            :class="item.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'"
+          >
+            <span class="text-xl mt-0.5 flex-shrink-0">{{ item.isCorrect ? '✅' : '❌' }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-black text-slate-600 truncate">{{ item.label }}</p>
+              <p class="text-sm font-bold mt-1" :class="item.isCorrect ? 'text-emerald-700' : 'text-red-700'">
+                Tu respuesta: <span class="font-medium">{{ item.studentAnswer }}</span>
+              </p>
+              <p v-if="!item.isCorrect" class="text-sm font-bold text-slate-600 mt-0.5">
+                Correcta: <span class="font-medium text-emerald-700">{{ item.correctAnswer }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensaje Explicativo Contextualizado -->
         <div class="max-w-xl">
           <p class="text-lg md:text-xl font-medium text-black leading-relaxed italic">
             "{{ decision.message }}"
           </p>
         </div>
 
-        <!-- Acción Siguiente (Retrasada 3s según Pantalla 7) -->
+        <!-- Acción Siguiente (Retrasada 3s) -->
         <div class="pt-4 h-24 flex items-center justify-center">
           <button v-if="showContinueButton"
                   @click="emit('continue')" 

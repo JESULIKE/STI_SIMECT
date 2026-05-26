@@ -33,6 +33,17 @@ watch(selectedOption, (newVal) => {
       <h4 class="text-xl font-black text-black uppercase tracking-tight italic">{{ contenido.pregunta }}</h4>
     </div>
 
+    <!-- Guía interactiva -->
+    <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 flex gap-3">
+      <span class="text-lg">💡</span>
+      <div>
+        <p class="text-[9px] font-black uppercase tracking-widest text-indigo-700">Guía de interacción</p>
+        <p class="text-xs font-semibold text-indigo-900 mt-0.5 leading-relaxed">
+          Selecciona una única opción de la lista haciendo clic sobre ella. Tu elección se marcará en verde y podrás cambiarla seleccionando otra en cualquier momento.
+        </p>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 gap-4">
       <button 
         v-for="opt in contenido.opciones" 

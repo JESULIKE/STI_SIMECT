@@ -60,8 +60,8 @@ export default defineEventHandler(async (event) => {
     const completedActivityIds = successfulAttempts.map(a => a.activityId)
 
     // 2. Obtener TODAS las actividades del nivel actual del estudiante
-    //    (1 actividad por subfase × nivel = 6 actividades en total)
-    const [activitiesForLevel, pedagogicalContextSource] = await Promise.all([
+    //    (2 actividades por subfase × nivel = 12 actividades en total)
+    const [activitiesForLevel, studentChecklists] = await Promise.all([
       prisma.activity.findMany({
         where: { isPublished: true, nivel: studentLevel },
         select: {
@@ -72,19 +72,26 @@ export default defineEventHandler(async (event) => {
         orderBy: [{ subPhase: 'asc' }, { createdAt: 'asc' }]
       }),
       studentProfileId
-        ? prisma.metacognitionChecklist.findFirst({
+        ? prisma.metacognitionChecklist.findMany({
             where: { studentProfileId },
             orderBy: { createdAt: 'desc' }
           })
-        : Promise.resolve(null)
+        : Promise.resolve([])
     ])
 
     // 3. Calcular qué subfases del nivel actual ya están completas
-    //    (1 actividad por subfase → si la completó en cualquier nivel, la subfase está completa)
-    const completedSubPhases = new Set<string>()
+    //    (2 actividades por subfase → si las completó, la subfase está completa)
+    const subPhaseCounts: Record<string, number> = {}
     for (const attempt of successfulAttempts) {
       if (attempt.activity.subPhase) {
-        completedSubPhases.add(attempt.activity.subPhase)
+        subPhaseCounts[attempt.activity.subPhase] = (subPhaseCounts[attempt.activity.subPhase] || 0) + 1
+      }
+    }
+
+    const completedSubPhases = new Set<string>()
+    for (const sp in subPhaseCounts) {
+      if (subPhaseCounts[sp] >= 2) {
+        completedSubPhases.add(sp)
       }
     }
 
@@ -99,16 +106,16 @@ export default defineEventHandler(async (event) => {
     }
 
     // 5. Obtener la actividad de esa subfase para el nivel actual
-    //    (solo la primera no completada — con el modelo de 1/subfase, suele ser la única)
+    //    (obtenemos la primera no completada para que se la muestre al estudiante)
     const activities = activitiesForLevel.filter(act =>
       act.subPhase === activeSubPhase &&
       !completedActivityIds.includes(act.id)
     )
 
     // 6. Barras de progreso
-    // — actividad: % dentro de la subfase activa (0 o 100 con 1 actividad por subfase)
-    const subPhaseCompleted = activeSubPhase && completedSubPhases.has(activeSubPhase) ? 1 : 0
-    const subPhaseTotal = 1 // 1 actividad por subfase
+    // — actividad: % dentro de la subfase activa (0, 50, o 100 con 2 actividades por subfase)
+    const subPhaseCompleted = activeSubPhase ? (subPhaseCounts[activeSubPhase] || 0) : 0
+    const subPhaseTotal = 2 // 2 actividades por subfase
 
     // — fase: % de subfases completadas que pertenecen a esta fase
     const subPhasesForPhase = SUBPHASE_ORDER.filter(sp => SUBPHASE_PHASE_MAP[sp] === phase)
@@ -120,13 +127,16 @@ export default defineEventHandler(async (event) => {
     const totalAllSubPhases = SUBPHASE_ORDER.length
 
     const progressBars = {
-      activity: subPhaseCompleted >= subPhaseTotal ? 100 : 0,
+      activity: Math.min(Math.round((subPhaseCompleted / subPhaseTotal) * 100), 100),
       phase: phaseTotal > 0 ? Math.min(Math.round((phaseCompletedCount / phaseTotal) * 100), 100) : 0,
       level: Math.min(Math.round((totalAllCompleted / totalAllSubPhases) * 100), 100)
     }
 
     // 7. Contexto pedagógico del tutor
-    const pedagogicalContext = getTutorTone(pedagogicalContextSource)
+    const activePhase = activeSubPhase ? SUBPHASE_PHASE_MAP[activeSubPhase] : 'ANALYSIS'
+    const checklistForPhase = studentChecklists.find(c => c.fase === activePhase) || null
+
+    const pedagogicalContext = getTutorTone(checklistForPhase)
     const firstActivity = activities[0] || null
     const nivelInfo = NIVEL_LABELS[studentLevel]
 
@@ -139,6 +149,7 @@ export default defineEventHandler(async (event) => {
       context: pedagogicalContext,
       progressBars,
       activeSubPhase,
+      hasCompletedChecklist: !!checklistForPhase,
       // Nivel actual del estudiante (para mostrar badge en UI)
       studentLevel: {
         code: studentLevel,

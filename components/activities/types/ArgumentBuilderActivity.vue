@@ -44,6 +44,17 @@ watch(argument, (newVal) => {
       <h4 class="text-xl font-black text-black italic">{{ contenido.tema }}</h4>
     </div>
 
+    <!-- Guía interactiva -->
+    <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 flex gap-3">
+      <span class="text-lg">💡</span>
+      <div>
+        <p class="text-[9px] font-black uppercase tracking-widest text-indigo-700">Guía de interacción</p>
+        <p class="text-xs font-semibold text-indigo-900 mt-0.5 leading-relaxed">
+          Escribe tu argumento dividiéndolo en 3 secciones: Premisa, Evidencia y Conclusión. Para aumentar la solidez de tu razonamiento, asegúrate de escribir al menos 40 palabras en total e incluir al menos 1 o más conectores lógicos de los sugeridos en la barra gris inferior (por ejemplo, "porque", "por lo tanto", "ya que").
+        </p>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 gap-8">
       <!-- Campo 1: Premisa -->
       <div class="space-y-3">

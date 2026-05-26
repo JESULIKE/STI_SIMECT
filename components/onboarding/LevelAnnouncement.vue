@@ -9,6 +9,7 @@ const props = defineProps<{
     color: string
     description: string
   }
+  changeType?: 'UPGRADE' | 'DOWNGRADE' | 'INITIAL'
 }>()
 
 const emit = defineEmits(['continue'])
@@ -64,8 +65,12 @@ onMounted(() => {
       </div>
 
       <!-- Etiqueta de paso -->
-      <p class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-3">
-        Nivel Asignado por tu Planeación
+      <p class="text-[10px] font-black uppercase tracking-[0.4em] mb-3"
+         :class="changeType === 'UPGRADE' ? 'text-indigo-500' : changeType === 'DOWNGRADE' ? 'text-red-500' : 'text-slate-400'"
+      >
+        <span v-if="changeType === 'UPGRADE'">🎉 ¡Ascendiste de Nivel!</span>
+        <span v-else-if="changeType === 'DOWNGRADE'">📉 Descendiste de Nivel</span>
+        <span v-else>Nivel Asignado por tu Planeación</span>
       </p>
 
       <!-- Título del nivel -->

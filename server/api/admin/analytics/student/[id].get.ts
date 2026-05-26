@@ -25,6 +25,13 @@ export default defineEventHandler(async (event) => {
             confianzaInicial: true,         // Confianza 1-5 (q3)
             estrategias: true,              // Estrategia elegida (q4)
             entornoSinDistracciones: true,  // Confirmó entorno (q5)
+            seguridadSinAyuda: true,        // JOL 1
+            seguridadTema: true,            // JOL 2
+            tiempoEstimadoFase1: true,      // JOL 3
+            atencionNumeros: true,          // JOL 4
+            separacionArgumentos: true,     // JOL 5
+            comprensionSIMECT: true,        // Onboarding 1
+            familiaridadTema: true          // Onboarding 2
           }
         },
 
@@ -47,7 +54,6 @@ export default defineEventHandler(async (event) => {
           }
         },
 
-        // Intentos con todos los datos pedagógicos
         attempts: {
           include: {
             activity: {
@@ -56,7 +62,9 @@ export default defineEventHandler(async (event) => {
                 subPhase: true,
                 fase: true,
                 nivel: true,
-                claveRespuestas: true,   // Para saber si acertó
+                tipo: true,
+                claveRespuestas: true,
+                contenido: true,
               }
             }
           },
@@ -65,6 +73,19 @@ export default defineEventHandler(async (event) => {
 
         progresses: {
           orderBy: [{ phase: 'asc' }, { subPhase: 'asc' }]
+        },
+        monitorings: {
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            subPhase: true,
+            atencionDetalle: true,
+            filtroInformacion: true,
+            conexionPlaneacion: true,
+            esfuerzoCognitivo: true,
+            confianzaActual: true,
+            createdAt: true
+          }
         }
       }
     })
@@ -89,6 +110,28 @@ export default defineEventHandler(async (event) => {
       ? (reflWithStars.reduce((acc, r) => acc + (r.autoEvaluacion || 0), 0) / reflWithStars.length).toFixed(1)
       : null
 
+    // Preparar datos para gráfica Radar de Metacognición
+    const calcAvg = (key: string) => {
+      const valid = student.reflections.filter(r => (r as any)[key] !== null)
+      if (valid.length === 0) return 0
+      return valid.reduce((acc, r) => acc + ((r as any)[key] || 0), 0) / valid.length
+    }
+    const metacognitionRadar = [
+      calcAvg('claridadMonteria'),
+      calcAvg('hechosOpiniones'),
+      calcAvg('datosConcretosStar'),
+      calcAvg('sigueEstrategia'),
+      parseFloat(avgAutoEval || '0')
+    ]
+
+    // Preparar datos para gráfica Line de Evolución de Puntajes
+    // Los intentos están ordenados 'desc', así que los invertimos para orden cronológico
+    const scoreTimeline = [...student.attempts].reverse().map(a => ({
+      date: a.createdAt,
+      score: a.puntajeObtenido || 0,
+      subPhase: a.activity?.subPhase || ''
+    }))
+
     return {
       success: true,
       data: {
@@ -101,7 +144,9 @@ export default defineEventHandler(async (event) => {
           avgScore,
           avgAutoEval,
           reflectionsCount: student.reflections.length
-        }
+        },
+        scoreTimeline,
+        metacognitionRadar
       }
     }
 

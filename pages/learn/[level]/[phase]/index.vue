@@ -9,11 +9,18 @@ import BaseActivity from '~/components/activities/BaseActivity.vue'
 import ChecklistInicial from '~/components/metacognition/ChecklistInicial.vue'
 import PausaDeConciencia from '~/components/metacognition/PausaDeConciencia.vue'
 import ReflexionPostActividad from '~/components/metacognition/ReflexionPostActividad.vue'
+import MomentoMonitoreo from '~/components/metacognition/MomentoMonitoreo.vue'
 import ChapterViewer from '~/components/narrative/ChapterViewer.vue'
 import DragAndDropActivity from '~/components/activities/types/DragAndDropActivity.vue'
 import ArgumentBuilderActivity from '~/components/activities/types/ArgumentBuilderActivity.vue'
 import MultipleChoiceActivity from '~/components/activities/types/MultipleChoiceActivity.vue'
 import TextMarkupActivity from '~/components/activities/types/TextMarkupActivity.vue'
+import FillInTheBlankActivity from '~/components/activities/types/FillInTheBlankActivity.vue'
+import MatchingActivity from '~/components/activities/types/MatchingActivity.vue'
+import ClassificationActivity from '~/components/activities/types/ClassificationActivity.vue'
+import TrafficLightActivity from '~/components/activities/types/TrafficLightActivity.vue'
+import SequenceOrderActivity from '~/components/activities/types/SequenceOrderActivity.vue'
+import ArrowMatchingActivity from '~/components/activities/types/ArrowMatchingActivity.vue'
 import PointsAnimation from '~/components/gamification/PointsAnimation.vue'
 import LevelUpCelebration from '~/components/celebrations/LevelUpCelebration.vue'
 import BadgeUnlocked from '~/components/celebrations/BadgeUnlocked.vue'
@@ -41,6 +48,7 @@ const {
   narrativeChapterData,
   lastChapterData,
   onboardingData,
+  levelChangedAnnouncement,
   activityManager,
   loadNextActivity,
   onOnboardingCompleted,
@@ -53,7 +61,9 @@ const {
   finishCelebration,
   finishNarrative,
   completeReflection,
-  error
+  completeMonitoring,
+  error,
+  isSessionComplete
 } = useLearningSession()
 
 const studentAnswer = ref<any>({})
@@ -73,15 +83,15 @@ watch(() => lastEvaluation.value, (evaluation) => {
 })
 
 const handleRequestHelp = () => {
-  // Tomar la pista del material de apoyo o usar una genérica pedagógica
-  const manualHint = currentActivityData.value?.materialApoyo?.pista || 
-    "Observa bien las categorías: las causas directas son acciones físicas inmediatas, mientras que las indirectas son factores sociales que ocurren de fondo."
+  // Leer la pista directamente del contenido de la actividad
+  const manualHint = currentActivityData.value?.contenido?.pista || 
+    currentActivityData.value?.materialApoyo?.pista || 
+    "Observa con atención todos los elementos del texto y busca la información más precisa y específica."
   
   activeHint.value = manualHint
   showHint.value = true
   
-  // Registrar el uso de ayuda para el motor pedagógico
-  console.log('Ayuda solicitada para la actividad:', currentActivityId.value)
+  console.log('Ayuda solicitada para la actividad:', currentActivityData.value?.id)
 }
 
 // Resetear respuesta al cambiar de actividad
@@ -99,10 +109,17 @@ watch(currentActivityData, () => {
       @complete="onOnboardingCompleted"
     />
 
-    <!-- Anuncio de Nivel asignado por JOL -->
+    <!-- Momento Monitoreo Intermedio (Fase 1) -->
+    <MomentoMonitoreo
+      v-if="currentState === 'MONITORING_PENDING'"
+      @continuar="completeMonitoring"
+    />
+
+    <!-- Anuncio de Nivel asignado por JOL o cambio dinámico -->
     <LevelAnnouncement
       v-if="currentState === 'LEVEL_ANNOUNCEMENT' && studentStore.progress.assignedLevel"
       :nivel="studentStore.progress.assignedLevel"
+      :changeType="levelChangedAnnouncement || undefined"
       @continue="dismissLevelAnnouncement"
     />
 
@@ -147,29 +164,58 @@ watch(currentActivityData, () => {
     </Transition>
 
     <!-- Contenedor Principal Unificado -->
-    <main class="max-w-5xl mx-auto px-4 py-8 md:py-12 relative" v-show="currentState !== 'CELEBRATING' && currentState !== 'READING_NARRATIVE' && currentState !== 'ONBOARDING' && currentState !== 'LEVEL_ANNOUNCEMENT'">
+    <main class="max-w-5xl mx-auto px-4 py-8 md:py-12 relative" v-show="currentState !== 'CELEBRATING' && currentState !== 'READING_NARRATIVE' && currentState !== 'ONBOARDING' && currentState !== 'LEVEL_ANNOUNCEMENT' && currentState !== 'MONITORING_PENDING'">
       
-      <!-- Cargando Activity Data -->
-      <div v-if="!currentActivityData && currentState !== 'CHECKLIST_PENDING'" class="flex flex-col items-center justify-center py-20 text-center space-y-6">
-        <div v-if="!error" class="h-16 w-16 rounded-full border-4 border-slate-100 border-t-indigo-500 animate-spin"></div>
-        <div v-else class="text-4xl">⚠️</div>
+      <!-- Cargando Activity Data / Finalización -->
+      <div v-if="!currentActivityData && currentState !== 'CHECKLIST_PENDING'" class="flex flex-col items-center justify-center py-12 text-center space-y-6">
         
-        <div class="space-y-2">
-          <h3 class="text-xl font-bold text-black">
-            {{ error || 'Cargando desafío...' }}
-          </h3>
-          <p v-if="error" class="text-sm text-black/70 max-w-xs mx-auto">
-            Hubo un problema al conectar con el sendero. ¿Quieres intentar de nuevo?
-          </p>
+        <!-- Tarjeta Premium de Felicitaciones -->
+        <div v-if="isSessionComplete" class="max-w-xl w-full bg-white rounded-[48px] border-2 border-slate-100 p-12 text-center space-y-8 animate-in fade-in zoom-in-95 duration-700 relative overflow-hidden shadow-2xl shadow-indigo-600/5">
+          <div class="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl"></div>
+          <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"></div>
+
+          <div class="relative inline-flex items-center justify-center w-20 h-20 bg-emerald-50 rounded-[28px] text-4xl mb-2">
+            <span>🏆</span>
+            <div class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white animate-ping"></div>
+          </div>
+
+          <div class="space-y-3">
+            <h2 class="text-2xl font-black text-black uppercase tracking-tight italic">¡Felicitaciones, Explorador!</h2>
+            <p class="text-sm font-semibold text-slate-700 leading-relaxed italic">
+              Has completado con éxito todos los desafíos de esta etapa del Tutor SIMECT. Tu constancia y esfuerzo demuestran un excelente desarrollo de tu pensamiento crítico, metacognición y toma de decisiones éticas y responsables.
+            </p>
+          </div>
+
+          <div class="pt-4">
+            <NuxtLink 
+              to="/dashboard"
+              class="inline-block w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-md shadow-slate-900/10"
+            >
+              Volver al Tablero Principal
+            </NuxtLink>
+          </div>
         </div>
 
-        <button 
-          v-if="error || !currentActivityData" 
-          @click="loadNextActivity"
-          class="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all"
-        >
-          {{ error ? 'Reintentar' : 'Cargar Manualmente' }}
-        </button>
+        <template v-else>
+          <div v-if="!error" class="h-16 w-16 rounded-full border-4 border-slate-100 border-t-indigo-500 animate-spin"></div>
+          <div v-else class="text-4xl">⚠️</div>
+          
+          <div class="space-y-2">
+            <h3 class="text-xl font-bold text-black">
+              {{ error || 'Cargando desafío...' }}
+            </h3>
+            <p v-if="error" class="text-sm text-black/70 max-w-xs mx-auto">
+              Hubo un problema al conectar con el sendero. ¿Quieres intentar de nuevo?
+            </p>
+          </div>
+
+          <button 
+            @click="loadNextActivity"
+            class="px-8 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all"
+          >
+            {{ error ? 'Reintentar' : 'Cargar Manualmente' }}
+          </button>
+        </template>
       </div>
 
       <!-- La Actividad (Maneja todos los estados internos) -->
@@ -204,25 +250,92 @@ watch(currentActivityData, () => {
 
           <!-- Slot 1: El Ejercicio (Dinámico según el tipo) -->
           <div v-if="activityManager.state.value !== 'idle' && activityManager.state.value !== 'finished' && currentState !== 'CHECKLIST_PENDING'" class="w-full">
-            <DragAndDropActivity 
+             <DragAndDropActivity 
               v-if="currentActivityData?.tipo === 'DRAG_AND_DROP'"
+              :key="currentActivityData.id"
               :contenido="currentActivityData.contenido"
               v-model="studentAnswer"
             />
             <ArgumentBuilderActivity 
               v-else-if="currentActivityData?.tipo === 'ARGUMENT_BUILDER'"
+              :key="currentActivityData.id"
               :contenido="currentActivityData.contenido"
               v-model="studentAnswer"
             />
             <MultipleChoiceActivity 
               v-else-if="currentActivityData?.tipo === 'MULTIPLE_CHOICE_REASONED'"
+              :key="currentActivityData.id"
               :contenido="currentActivityData.contenido"
               v-model="studentAnswer"
             />
             <TextMarkupActivity 
               v-else-if="currentActivityData?.tipo === 'TEXT_MARKUP'"
+              :key="currentActivityData.id"
               :contenido="currentActivityData.contenido"
               v-model="studentAnswer"
+            />
+            <FillInTheBlankActivity
+              v-else-if="currentActivityData?.tipo === 'FILL_IN_THE_BLANK'"
+              :key="currentActivityData.id"
+              :contexto="currentActivityData.contenido?.contexto"
+              :pregunta="currentActivityData.contenido?.pregunta"
+              :plantilla="currentActivityData.contenido?.plantilla"
+              :opciones="currentActivityData.contenido?.opciones || []"
+              :state="activityManager.state.value"
+              @update:answer="(v) => studentAnswer = v"
+            />
+            <MatchingActivity
+              v-else-if="currentActivityData?.tipo === 'MATCHING'"
+              :key="currentActivityData.id"
+              :contexto="currentActivityData.contenido?.contexto"
+              :pregunta="currentActivityData.contenido?.pregunta"
+              :pares="currentActivityData.contenido?.pares || []"
+              :opciones-derechas="currentActivityData.contenido?.opcionesDerechas || []"
+              :pista="currentActivityData.contenido?.pista"
+              :state="activityManager.state.value"
+              @update:answer="(v) => studentAnswer = v"
+            />
+            <ClassificationActivity
+              v-else-if="currentActivityData?.tipo === 'CLASSIFICATION'"
+              :key="currentActivityData.id"
+              :contexto="currentActivityData.contenido?.contexto"
+              :pregunta="currentActivityData.contenido?.pregunta"
+              :columnas="currentActivityData.contenido?.columnas || []"
+              :items="currentActivityData.contenido?.items || []"
+              :pista="currentActivityData.contenido?.pista"
+              :state="activityManager.state.value"
+              @update:answer="(v) => studentAnswer = v"
+            />
+            <TrafficLightActivity
+              v-else-if="currentActivityData?.tipo === 'TRAFFIC_LIGHT'"
+              :key="currentActivityData.id"
+              :contexto="currentActivityData.contenido?.contexto"
+              :pregunta="currentActivityData.contenido?.pregunta"
+              :fuentes="currentActivityData.contenido?.fuentes || []"
+              :pista="currentActivityData.contenido?.pista"
+              :state="activityManager.state.value"
+              @update:answer="(v) => studentAnswer = v"
+            />
+            <SequenceOrderActivity
+              v-else-if="currentActivityData?.tipo === 'SEQUENCE_ORDER'"
+              :key="currentActivityData.id"
+              :contexto="currentActivityData.contenido?.contexto"
+              :pregunta="currentActivityData.contenido?.pregunta"
+              :items="currentActivityData.contenido?.items || []"
+              :pista="currentActivityData.contenido?.pista"
+              :state="activityManager.state.value"
+              @update:answer="(v) => studentAnswer = v"
+            />
+            <ArrowMatchingActivity
+              v-else-if="currentActivityData?.tipo === 'ARROW_MATCHING'"
+              :key="currentActivityData.id"
+              :contexto="currentActivityData.contenido?.contexto"
+              :pregunta="currentActivityData.contenido?.pregunta"
+              :izquierda="currentActivityData.contenido?.izquierda || []"
+              :derecha="currentActivityData.contenido?.derecha || []"
+              :pista="currentActivityData.contenido?.pista"
+              :state="activityManager.state.value"
+              @update:answer="(v) => studentAnswer = v"
             />
             <div v-else class="p-12 text-center text-black font-bold">
               Tipo de actividad no soportado: {{ currentActivityData?.tipo }}

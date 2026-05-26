@@ -1,15 +1,16 @@
 import { prisma } from '~/server/utils/prisma'
 import { evaluateActivity } from '~/server/utils/pedagogicalEngine'
 import { checkAndAwardBadges } from '~/server/utils/gamification'
+import { subirNivel, bajarNivel } from '~/server/utils/levelEngine'
 
 // Mapa de subfases: cuántas actividades se necesitan para completar cada subfase y qué sigue
 const SUBPHASE_CONFIG: Record<string, { totalActivities: number, nextSubPhase: string | null }> = {
-  '1.1': { totalActivities: 1, nextSubPhase: '1.2' },
-  '1.2': { totalActivities: 1, nextSubPhase: null }, // null = completó la fase
-  '2.1': { totalActivities: 1, nextSubPhase: '2.2' },
-  '2.2': { totalActivities: 1, nextSubPhase: null },
-  '3.1': { totalActivities: 1, nextSubPhase: '3.2' },
-  '3.2': { totalActivities: 1, nextSubPhase: null },
+  '1.1': { totalActivities: 2, nextSubPhase: '1.2' },
+  '1.2': { totalActivities: 2, nextSubPhase: null }, // null = completó la fase
+  '2.1': { totalActivities: 2, nextSubPhase: '2.2' },
+  '2.2': { totalActivities: 2, nextSubPhase: null },
+  '3.1': { totalActivities: 2, nextSubPhase: '3.2' },
+  '3.2': { totalActivities: 2, nextSubPhase: null },
 }
 
 export default defineEventHandler(async (event) => {
@@ -134,6 +135,39 @@ export default defineEventHandler(async (event) => {
     // 5. TRANSACCIÓN ATÓMICA
     const result = await prisma.$transaction(async (tx) => {
       try {
+        let newLevel = profile.nivelActual;
+        let levelChanged = false;
+
+        const isIncorrect = evaluation.scoreDetails.basePoints < 50;
+
+        if (isIncorrect) {
+          // Respuesta incorrecta -> Baja un nivel inmediatamente
+          const loweredLevel = bajarNivel(profile.nivelActual as any);
+          if (loweredLevel !== profile.nivelActual) {
+            newLevel = loweredLevel;
+            levelChanged = true;
+            console.log(`[Submit] Respuesta incorrecta (${evaluation.scoreDetails.basePoints}%). Descendiendo nivel de ${profile.nivelActual} a ${newLevel}`);
+          }
+        } else {
+          // Respuesta correcta -> Verificar si son 2 correctas seguidas para subir de nivel
+          const lastAttempt = await tx.activityAttempt.findFirst({
+            where: { studentProfileId },
+            orderBy: { createdAt: 'desc' }
+          });
+
+          const wasLastAttemptCorrect = lastAttempt && 
+            (lastAttempt.feedbackRecibido as any)?.scoreDetails?.basePoints >= 50;
+
+          if (wasLastAttemptCorrect) {
+            const raisedLevel = subirNivel(profile.nivelActual as any);
+            if (raisedLevel !== profile.nivelActual) {
+              newLevel = raisedLevel;
+              levelChanged = true;
+              console.log(`[Submit] 2 correctas seguidas. Subiendo nivel de ${profile.nivelActual} a ${newLevel}`);
+            }
+          }
+        }
+
         // A. Registrar el intento
         const attempt = await tx.activityAttempt.create({
           data: {
@@ -146,6 +180,23 @@ export default defineEventHandler(async (event) => {
             feedbackRecibido: evaluation as any
           }
         })
+
+        // B. Registrar ErrorPattern si es incorrecto (Para Analítica Docente)
+        if (isIncorrect) {
+          // Mapear el error a un ErrorType válido de Prisma
+          let tipoError: any = 'CONCEPTUAL'
+          if (activity.fase === 'EVALUATION') tipoError = 'LOGICAL'
+          if (activity.fase === 'ANALYSIS') tipoError = 'READING_COMPREHENSION'
+            
+          await tx.errorPattern.create({
+            data: {
+              studentProfileId,
+              activityAttemptId: attempt.id,
+              tipoError,
+              descripcion: `Falla en SF ${activity.subPhase || 'General'}: El estudiante falló la actividad "${activity.titulo}". Base Score: ${evaluation.scoreDetails.basePoints}`
+            }
+          })
+        }
 
         // B. Actualizar progreso de subfase
         if (isFirstSuccess && activity.subPhase) {
@@ -178,17 +229,21 @@ export default defineEventHandler(async (event) => {
             where: { id: studentProfileId },
             data: {
               totalPoints: { increment: pointsToAdd },
-              lastActivityAt: new Date()
+              lastActivityAt: new Date(),
+              nivelActual: levelChanged ? newLevel : undefined
             }
           })
         } else if (!isFirstSuccess) {
           await tx.studentProfile.update({
             where: { id: studentProfileId },
-            data: { lastActivityAt: new Date() }
+            data: { 
+              lastActivityAt: new Date(),
+              nivelActual: levelChanged ? newLevel : undefined
+            }
           })
         }
 
-        return { attempt }
+        return { attempt, newLevel }
       } catch (innerError: any) {
         console.error('[Submit] Error dentro de la transacción:', innerError)
         throw innerError
@@ -218,11 +273,20 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Calcular barras de progreso basadas en subfases completadas (1 actividad por subfase)
+    // Calcular barras de progreso basadas en subfases completadas (2 actividades por subfase)
     const completedSubPhases = new Set<string>()
+    const subPhaseCounts: Record<string, number> = {}
+
     for (const attempt of successfulAttempts) {
       if (attempt.activity.subPhase) {
-        completedSubPhases.add(attempt.activity.subPhase)
+        subPhaseCounts[attempt.activity.subPhase] = (subPhaseCounts[attempt.activity.subPhase] || 0) + 1
+      }
+    }
+
+    for (const sp in subPhaseCounts) {
+      const config = SUBPHASE_CONFIG[sp]
+      if (subPhaseCounts[sp] >= (config?.totalActivities || 2)) {
+        completedSubPhases.add(sp)
       }
     }
 
@@ -234,7 +298,9 @@ export default defineEventHandler(async (event) => {
     }
 
     // Progreso de la actividad dentro de la subfase actual
-    const activityProgressBar = activity.subPhase && completedSubPhases.has(activity.subPhase) ? 100 : 0
+    const currentSpCount = activity.subPhase ? (subPhaseCounts[activity.subPhase] || 0) : 0
+    const configSp = activity.subPhase ? SUBPHASE_CONFIG[activity.subPhase] : null
+    const activityProgressBar = configSp ? Math.min(Math.round((currentSpCount / configSp.totalActivities) * 100), 100) : 0
 
     // Progreso de fase
     const subPhasesForPhase = SUBPHASE_ORDER.filter(sp => SUBPHASE_PHASE_MAP[sp] === activity.fase)
@@ -258,6 +324,7 @@ export default defineEventHandler(async (event) => {
           bonusMessage: bonusMessage
         },
         attemptId: result.attempt.id,
+        currentLevel: result.newLevel,
         newBadges,
         isRepeat: !isFirstSuccess,
         subPhaseUnlocked,

@@ -4,16 +4,17 @@ import { ref, watch } from 'vue'
 const props = defineProps<{
   contenido: {
     texto: string
+    opciones?: string[]
   },
   modelValue: any
 }>()
 
 const emit = defineEmits(['update:modelValue'])
 
-const answer = ref(props.modelValue?.text || '')
+const selectedOption = ref<string | null>(props.modelValue?.text || null)
 
-watch(answer, (newVal) => {
-  emit('update:modelValue', { text: newVal })
+watch(selectedOption, (newVal) => {
+  emit('update:modelValue', { text: newVal || '' })
 })
 </script>
 
@@ -27,19 +28,31 @@ watch(answer, (newVal) => {
       </p>
     </div>
 
-    <!-- Campo de respuesta -->
+    <!-- Guía interactiva -->
+    <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 flex gap-3">
+      <span class="text-lg">💡</span>
+      <div>
+        <p class="text-[9px] font-black uppercase tracking-widest text-indigo-700">Guía de interacción</p>
+        <p class="text-xs font-semibold text-indigo-900 mt-0.5 leading-relaxed">
+          Lee el fragmento de arriba de forma reflexiva y haz clic en la opción correcta de abajo que represente el extracto o hecho clave según lo solicitado. Puedes cambiar tu opción haciendo clic en otra tarjeta en cualquier momento.
+        </p>
+      </div>
+    </div>
+
+    <!-- Opciones de selección -->
     <div class="space-y-4">
-      <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-black px-4">Escribe tu hallazgo aquí</label>
-      <div class="relative">
-        <input 
-          v-model="answer"
-          type="text" 
-          placeholder="Escribe la respuesta exacta..."
-          class="w-full px-8 py-6 bg-white border-2 border-slate-100 rounded-[32px] text-xl text-black placeholder:text-slate-300 focus:border-indigo-500 focus:outline-none transition-all shadow-xl shadow-slate-200/50"
+      <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-black px-4">Selecciona el fragmento correcto</label>
+      <div class="flex flex-wrap gap-3">
+        <button
+          v-for="(opt, index) in (contenido.opciones || [])" :key="index"
+          @click="selectedOption = opt"
+          class="px-5 py-4 text-base font-bold rounded-2xl border-2 transition-all text-left"
+          :class="selectedOption === opt 
+            ? 'border-indigo-600 bg-indigo-600 text-white shadow-md scale-[1.02]' 
+            : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50'"
         >
-        <div class="absolute right-6 top-1/2 -translate-y-1/2 text-indigo-500 opacity-50">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-        </div>
+          {{ opt }}
+        </button>
       </div>
     </div>
   </div>

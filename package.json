@@ -30,8 +30,10 @@
     "@vueuse/nuxt": "^14.3.0",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
+    "chart.js": "^4.5.1",
     "nuxt-auth-utils": "^0.5.29",
     "pinia": "^2.3.0",
+    "vue-chartjs": "^5.3.3",
     "vue-draggable-next": "^2.3.0"
   },
   "prisma": {

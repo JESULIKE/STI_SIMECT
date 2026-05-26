@@ -11,6 +11,7 @@ export type SessionState =
   | 'ACTIVITY_IN_PROGRESS' 
   | 'EVALUATING' 
   | 'FEEDBACK' 
+  | 'MONITORING_PENDING'  // Momento Monitoreo intermedio
   | 'REFLECTION_PENDING' 
   | 'CELEBRATING'
   | 'READING_NARRATIVE'
@@ -71,6 +72,7 @@ export function useLearningSession() {
   const lastChapterData = ref<any>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const isSessionComplete = ref(false)
 
   // Rastrea la subfase activa para detectar transiciones
   const currentActiveSubPhase = ref<string | null>(null)
@@ -126,6 +128,17 @@ export function useLearningSession() {
         return
       }
 
+      // Sincronizar estado de checklist/onboarding con la base de datos
+      if (response.hasCompletedChecklist) {
+        studentStore.completeChecklist()
+        if (currentState.value === 'ONBOARDING' || currentState.value === 'CHECKLIST_PENDING') {
+          currentState.value = 'ACTIVITY_PRESENTATION'
+        }
+      } else {
+        studentStore.requestChecklist()
+        currentState.value = isFirstTimeStudent ? 'ONBOARDING' : 'CHECKLIST_PENDING'
+      }
+
       const list = response.data || []
       console.log(`Respuesta del servidor: ${list.length} actividades encontradas.`)
 
@@ -149,7 +162,8 @@ export function useLearningSession() {
           if (showed) return
         }
       } else {
-        error.value = "¡Felicidades! Has completado todos los desafíos de esta etapa. Pronto desbloquearemos nuevas misiones."
+        currentActivityData.value = null
+        isSessionComplete.value = true
       }
 
     } catch (e: any) {
@@ -177,11 +191,13 @@ export function useLearningSession() {
 
   const onChecklistCompleted = async (data: any) => {
     try {
-      // Guardar en DB: JOL + datos de onboarding. El endpoint ahora devuelve el nivel.
+      const activePhase = (studentStore.progress.phase || 'ANALYSIS').toUpperCase()
+      // Guardar en DB: JOL + datos de onboarding + fase activa. El endpoint ahora devuelve el nivel.
       const result: any = await $fetch('/api/student/metacognition/checklist', {
         method: 'POST',
         body: {
           ...data,
+          fase: activePhase,
           comprensionSIMECT: data.comprensionSIMECT ?? onboardingData.value?.comprensionSIMECT ?? null,
           familiaridadTema:  data.familiaridadTema  ?? onboardingData.value?.familiaridadTema  ?? null,
         }
@@ -210,6 +226,7 @@ export function useLearningSession() {
    * El estudiante dismiss el anuncio de nivel → cargar primera actividad (con historia).
    */
   const dismissLevelAnnouncement = async () => {
+    levelChangedAnnouncement.value = null
     await loadNextActivity()
     if (currentState.value === 'LEVEL_ANNOUNCEMENT') {
       currentState.value = 'ACTIVITY_PRESENTATION'
@@ -233,6 +250,22 @@ export function useLearningSession() {
   }
 
   const currentAttemptId = ref<string | null>(null)
+  const levelChangedAnnouncement = ref<'UPGRADE' | 'DOWNGRADE' | 'INITIAL' | null>(null)
+
+  const NIVEL_METADATA: Record<string, any> = {
+    BASIC: {
+      code: 'BASIC', label: 'Básico', emoji: '🌱', color: 'emerald',
+      description: 'Estás construyendo las bases de tu pensamiento crítico. En este nivel, nos enfocaremos en identificar los hechos principales, distinguir entre opiniones y datos reales, y comprender la información sin filtros emocionales.'
+    },
+    INTERMEDIATE: {
+      code: 'INTERMEDIATE', label: 'Intermedio', emoji: '🔍', color: 'indigo',
+      description: 'Tienes un buen dominio de la lectura crítica. En este nivel te enfrentarás a matices, falacias argumentativas sutiles, y el desafío de identificar intenciones ocultas en los textos que analizas.'
+    },
+    ADVANCED: {
+      code: 'ADVANCED', label: 'Avanzado', emoji: '🔥', color: 'red',
+      description: '¡Nivel Experto! Aquí nos enfrentamos a dilemas complejos, síntesis de múltiples fuentes y evaluación de argumentos estructurados. Es el momento de poner a prueba tu máxima agudeza mental.'
+    }
+  }
 
   const submitCurrentActivity = async (studentAnswer: any, priorConfidence: number) => {
     currentState.value = 'EVALUATING'
@@ -259,13 +292,26 @@ export function useLearningSession() {
       
       studentStore.addPoints(result.decision.scoreDetails?.totalGained || 0)
       
+      const oldLevel = studentStore.progress.level || studentStore.progress.assignedLevel?.code
+      
       if (result.decision.progressBars) {
         studentStore.updateProgressBars(result.decision.progressBars)
       }
 
       // Sincronizar nivel adaptativo si cambió
       if (result.decision.currentLevel) {
-        studentStore.setAssignedLevel(result.decision.currentLevel)
+        const newLevelCode = result.decision.currentLevel
+        if (oldLevel && oldLevel !== newLevelCode) {
+          const levels = ['BASIC', 'INTERMEDIATE', 'ADVANCED']
+          const oldIndex = levels.indexOf(oldLevel)
+          const newIndex = levels.indexOf(newLevelCode)
+          if (newIndex > oldIndex) {
+            levelChangedAnnouncement.value = 'UPGRADE'
+          } else {
+            levelChangedAnnouncement.value = 'DOWNGRADE'
+          }
+        }
+        studentStore.setAssignedLevel(NIVEL_METADATA[newLevelCode] || NIVEL_METADATA['BASIC'])
       }
 
       activityManager.state.value = 'finished'
@@ -302,28 +348,88 @@ export function useLearningSession() {
     // Después de la reflexión, cargamos la siguiente subfase
     // loadNextActivity mostrará el contexto si es una subfase nueva
     await loadNextActivity()
+    if (levelChangedAnnouncement.value) {
+      currentState.value = 'LEVEL_ANNOUNCEMENT'
+      return
+    }
     if (currentState.value === 'REFLECTION_PENDING') {
       currentState.value = 'ACTIVITY_PRESENTATION'
     }
   }
 
+  const completeMonitoring = async (data: any) => {
+    try {
+      await $fetch('/api/student/metacognition/monitoring', {
+        method: 'POST',
+        body: {
+          ...data
+        }
+      })
+    } catch (error) {
+      console.error('Error al guardar monitoreo:', error)
+    }
+
+    // Tras completar el monitoreo intermedio de 1.1, cargamos la subfase 1.2
+    await loadNextActivity()
+    if (levelChangedAnnouncement.value) {
+      currentState.value = 'LEVEL_ANNOUNCEMENT'
+      return
+    }
+    currentState.value = 'ACTIVITY_PRESENTATION'
+  }
+
   const advanceFromFeedback = async () => {
     const action = lastEvaluation.value?.action
     if (action === 'REINFORCEMENT') {
+      if (levelChangedAnnouncement.value) {
+        currentState.value = 'LEVEL_ANNOUNCEMENT'
+        return
+      }
       currentState.value = 'ACTIVITY_PRESENTATION'
       activityManager.resetTimer()
+      await loadNextActivity()
       return
     }
     
     if (lastEvaluation.value?.isSubPhaseComplete) {
-      // Subfase completada → primero la reflexión metacognitiva
-      currentState.value = 'REFLECTION_PENDING'
+      const activePhase = studentStore.progress.phase
+      const activeSubPhase = currentActiveSubPhase.value
+      
+      if (activePhase === 'ANALYSIS') {
+        if (activeSubPhase === '1.1') {
+          // Fase 1 Subfase 1.1 completada -> Momento Monitoreo
+          currentState.value = 'MONITORING_PENDING'
+        } else {
+          // Fase 1 Subfase 1.2 completada -> Momento Control (Reflexión)
+          currentState.value = 'REFLECTION_PENDING'
+        }
+      } else {
+        // Fases 2 y 3 no tienen monitoreo ni reflexión intermedia -> pasan directo
+        if (action === 'CHALLENGE_UNLOCK' || lastEvaluation.value?.unlockChapter) {
+          gamification.processLevelUp()
+          currentState.value = 'CELEBRATING'
+          return
+        }
+        
+        await loadNextActivity()
+        if (levelChangedAnnouncement.value) {
+          currentState.value = 'LEVEL_ANNOUNCEMENT'
+          return
+        }
+        currentState.value = 'ACTIVITY_PRESENTATION'
+      }
     } else {
       if (action === 'CHALLENGE_UNLOCK' || lastEvaluation.value?.unlockChapter) {
         gamification.processLevelUp()
         currentState.value = 'CELEBRATING'
         return
       }
+      
+      if (levelChangedAnnouncement.value) {
+        currentState.value = 'LEVEL_ANNOUNCEMENT'
+        return
+      }
+
       // Actividad normal completada → siguiente actividad (misma subfase)
       currentState.value = 'ACTIVITY_PRESENTATION'
       loadNextActivity()
@@ -348,19 +454,7 @@ export function useLearningSession() {
   }
 
   // Init
-  if (currentState.value === 'ONBOARDING' || currentState.value === 'CHECKLIST_PENDING') {
-    console.log('[Session] Primer ingreso o sesión nueva. Limpiando subfases vistas de sessionStorage.')
-    if (typeof window !== 'undefined') {
-      try {
-        sessionStorage.removeItem('simect_seen_subphases')
-        console.log('[Session] sessionStorage "simect_seen_subphases" limpio con éxito.')
-      } catch (e) {
-        console.warn('[Session] No se pudo limpiar sessionStorage:', e)
-      }
-    }
-  } else if (currentState.value === 'ACTIVITY_PRESENTATION') {
-    loadNextActivity()
-  }
+  loadNextActivity()
 
   return {
     currentState,
@@ -369,6 +463,7 @@ export function useLearningSession() {
     narrativeChapterData,
     lastChapterData,
     onboardingData,
+    levelChangedAnnouncement,
     activityManager,
     loadNextActivity,
     onOnboardingCompleted,
@@ -378,9 +473,11 @@ export function useLearningSession() {
     startCurrentActivity,
     submitCurrentActivity,
     completeReflection,
+    completeMonitoring,
     advanceFromFeedback,
     finishCelebration,
     finishNarrative,
-    error
+    error,
+    isSessionComplete
   }
 }

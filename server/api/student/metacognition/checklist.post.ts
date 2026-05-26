@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
     const checklist = await prisma.metacognitionChecklist.create({
       data: {
         studentProfileId,
+        fase: body.fase ? body.fase.toUpperCase() : 'ANALYSIS',
 
         // Datos del Onboarding (primera sesión)
         comprensionSIMECT:  body.comprensionSIMECT  ? parseInt(body.comprensionSIMECT)  : null,

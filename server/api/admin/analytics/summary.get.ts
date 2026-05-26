@@ -27,6 +27,10 @@ export default defineEventHandler(async (event) => {
     let totalIPC = 0
     let totalLevelsCompleted = 0
 
+    let basicCount = 0
+    let intermediateCount = 0
+    let advancedCount = 0
+
     const studentsList = studentProfiles.map(profile => {
       const avgScore = profile.attempts.length > 0 
         ? profile.attempts.reduce((acc, curr) => acc + (curr.puntajeObtenido || 0), 0) / profile.attempts.length
@@ -35,13 +39,19 @@ export default defineEventHandler(async (event) => {
       totalIPC += avgScore
       totalLevelsCompleted += profile.progresses.filter(p => p.percentCompleted === 100).length
 
+      const level = profile.nivelActual || profile.progresses[0]?.level || 'BASIC'
+      
+      if (level === 'BASIC') basicCount++
+      else if (level === 'INTERMEDIATE') intermediateCount++
+      else if (level === 'ADVANCED') advancedCount++
+
       return {
         id: profile.codigoEstudiantil || profile.id,
         name: profile.user.name,
         email: profile.user.email,
         studentCode: profile.codigoEstudiantil || profile.user.code || '—',
         institucion: profile.institucion || '—',
-        level: profile.progresses[0]?.level || 'BASIC',
+        level,
         ipc: Math.round(avgScore),
         progress: profile.progresses[0]?.percentCompleted || 0
       }
@@ -73,7 +83,8 @@ export default defineEventHandler(async (event) => {
         { label: 'Hitos Alcanzados', value: totalLevelsCompleted.toString(), icon: '🏆' }
       ],
       students: studentsList,
-      frequentErrors
+      frequentErrors,
+      levelDistribution: [basicCount, intermediateCount, advancedCount]
     }
 
   } catch (error) {

@@ -149,7 +149,7 @@ const currentStreak = computed(() => (progressData.value as any)?.streak || 0)
               <!-- Botón continuar (solo subfase activa) -->
               <NuxtLink
                 v-if="sp.status === 'En curso'"
-                to="/learn/basic/analysis"
+                :to="`/learn/${(progressData as any)?.nivelActual?.code?.toLowerCase() || 'basic'}/${phase.code.toLowerCase()}`"
                 class="shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all hover:scale-105 shadow-md shadow-indigo-600/20 whitespace-nowrap"
               >
                 Continuar →
@@ -159,7 +159,7 @@ const currentStreak = computed(() => (progressData.value as any)?.streak || 0)
             <!-- Pastillitas de actividades -->
             <div class="flex items-center gap-1.5 mb-2 pl-10">
               <div
-                v-for="i in 6"
+                v-for="i in sp.total"
                 :key="i"
                 class="h-2 w-full rounded-full transition-all duration-500 max-w-[40px]"
                 :class="i <= sp.completed

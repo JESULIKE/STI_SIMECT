@@ -12,6 +12,14 @@ export function calculateBaseScore(activity: any, respuesta: any): number {
   // 1. Manejo de Opción Múltiple (MULTIPLE_CHOICE_REASONED)
   if (activity.tipo === 'MULTIPLE_CHOICE_REASONED') {
     const studentChoice = respuesta.selectedId || respuesta
+    
+    // Primero, buscar si en el contenido.opciones viene esCorrecta = true
+    const correctOption = activity.contenido?.opciones?.find((o: any) => o.esCorrecta === true)
+    if (correctOption) {
+      return studentChoice === correctOption.id ? 100 : 0
+    }
+
+    // Fallback al formato viejo
     return studentChoice === activity.claveRespuestas.correcta ? 100 : 0
   }
 
@@ -20,6 +28,79 @@ export function calculateBaseScore(activity: any, respuesta: any): number {
     const studentText = (respuesta.text || respuesta || '').toString().trim().toLowerCase()
     const correctText = (activity.claveRespuestas.respuestaExacta || '').toString().trim().toLowerCase()
     return studentText === correctText ? 100 : 0
+  }
+
+  // 3. Completar espacio en blanco (FILL_IN_THE_BLANK)
+  if (activity.tipo === 'FILL_IN_THE_BLANK') {
+    const normalize = (s: string) => s.trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // sin tildes
+    const studentText = normalize(respuesta.text || '')
+    const correct = normalize(activity.claveRespuestas.respuestaExacta || '')
+    // Aceptar si contiene la respuesta clave (ej: 'metros' dentro de '7.5 metros')
+    return studentText === correct || studentText.includes(correct) ? 100 : 0
+  }
+
+  // 4. Emparejamiento (MATCHING)
+  if (activity.tipo === 'MATCHING') {
+    const studentMatching: Record<string, string> = respuesta.matching || {}
+    const correctMatching: Record<string, string> = activity.claveRespuestas.matching || {}
+    const total = Object.keys(correctMatching).length
+    if (total === 0) return 0
+    let correct = 0
+    for (const [id, val] of Object.entries(correctMatching)) {
+      if ((studentMatching[id] || '').toLowerCase().trim() === val.toLowerCase().trim()) correct++
+    }
+    return Math.round((correct / total) * 100)
+  }
+
+  // 5. Unión de flechas (ARROW_MATCHING)
+  if (activity.tipo === 'ARROW_MATCHING') {
+    const studentArrows: Array<{ from: string; to: string }> = respuesta.arrows || []
+    const correctArrows: Array<{ from: string; to: string }> = activity.claveRespuestas.arrows || []
+    if (correctArrows.length === 0) return 0
+    let correct = 0
+    for (const ca of correctArrows) {
+      if (studentArrows.some(sa => sa.from === ca.from && sa.to === ca.to)) correct++
+    }
+    return Math.round((correct / correctArrows.length) * 100)
+  }
+
+  // 6. Clasificación (CLASSIFICATION)
+  if (activity.tipo === 'CLASSIFICATION') {
+    const studentClassification: Record<string, string> = respuesta.classification || {}
+    const correctClassification: Record<string, string> = activity.claveRespuestas.classification || {}
+    const total = Object.keys(correctClassification).length
+    if (total === 0) return 0
+    let correct = 0
+    for (const [itemId, colId] of Object.entries(correctClassification)) {
+      if (studentClassification[itemId] === colId) correct++
+    }
+    return Math.round((correct / total) * 100)
+  }
+
+  // 7. Semáforo (TRAFFIC_LIGHT)
+  if (activity.tipo === 'TRAFFIC_LIGHT') {
+    const studentLight: Record<string, string> = respuesta.trafficLight || {}
+    const correctLight: Record<string, string> = activity.claveRespuestas.trafficLight || {}
+    const total = Object.keys(correctLight).length
+    if (total === 0) return 0
+    let correct = 0
+    for (const [id, color] of Object.entries(correctLight)) {
+      if (studentLight[id] === color) correct++
+    }
+    return Math.round((correct / total) * 100)
+  }
+
+  // 8. Orden de Secuencia (SEQUENCE_ORDER)
+  if (activity.tipo === 'SEQUENCE_ORDER') {
+    const studentSeq: string[] = respuesta.sequence || []
+    const correctSeq: string[] = activity.claveRespuestas.sequence || []
+    if (correctSeq.length === 0) return 0
+    let correct = 0
+    correctSeq.forEach((id, idx) => {
+      if (studentSeq[idx] === id) correct++
+    })
+    return Math.round((correct / correctSeq.length) * 100)
   }
 
   // 3. Manejo de Drag and Drop (DRAG_AND_DROP) - Lógica existente normalizada
@@ -54,11 +135,155 @@ export function calculateBaseScore(activity: any, respuesta: any): number {
 }
 
 /**
+ * Genera un desglose ítem a ítem de la respuesta del estudiante
+ */
+export function getItemBreakdown(activity: any, respuesta: any): Array<{
+  itemId: string
+  label: string
+  studentAnswer: string
+  correctAnswer: string
+  isCorrect: boolean
+}> {
+  if (!respuesta || !activity.claveRespuestas) return []
+
+  // MATCHING
+  if (activity.tipo === 'MATCHING') {
+    const studentMatching: Record<string, string> = respuesta.matching || {}
+    const correctMatching: Record<string, string> = activity.claveRespuestas.matching || {}
+    const pares: any[] = activity.contenido?.pares || []
+    return Object.entries(correctMatching).map(([id, correctVal]) => {
+      const par = pares.find((p: any) => p.id === id)
+      const studentVal = studentMatching[id] || ''
+      return {
+        itemId: id,
+        label: par?.izquierda || id,
+        studentAnswer: studentVal,
+        correctAnswer: correctVal,
+        isCorrect: studentVal.toLowerCase().trim() === correctVal.toLowerCase().trim()
+      }
+    })
+  }
+
+  // CLASSIFICATION
+  if (activity.tipo === 'CLASSIFICATION') {
+    const studentClass: Record<string, string> = respuesta.classification || {}
+    const correctClass: Record<string, string> = activity.claveRespuestas.classification || {}
+    const items: any[] = activity.contenido?.items || []
+    const columnas: any[] = activity.contenido?.columnas || []
+    return Object.entries(correctClass).map(([itemId, correctColId]) => {
+      const item = items.find((i: any) => i.id === itemId)
+      const correctCol = columnas.find((c: any) => c.id === correctColId)
+      const studentColId = studentClass[itemId] || ''
+      const studentCol = columnas.find((c: any) => c.id === studentColId)
+      return {
+        itemId,
+        label: item?.texto || itemId,
+        studentAnswer: studentCol?.label || studentColId || '(sin respuesta)',
+        correctAnswer: correctCol?.label || correctColId,
+        isCorrect: studentColId === correctColId
+      }
+    })
+  }
+
+  // ARROW_MATCHING
+  if (activity.tipo === 'ARROW_MATCHING') {
+    const studentArrows: Array<{ from: string; to: string }> = respuesta.arrows || []
+    const correctArrows: Array<{ from: string; to: string }> = activity.claveRespuestas.arrows || []
+    const izquierda: any[] = activity.contenido?.izquierda || []
+    const derecha: any[] = activity.contenido?.derecha || []
+    return correctArrows.map(ca => {
+      const fromItem = izquierda.find((i: any) => i.id === ca.from)
+      const toItem = derecha.find((d: any) => d.id === ca.to)
+      const studentArrow = studentArrows.find(sa => sa.from === ca.from)
+      const studentToItem = derecha.find((d: any) => d.id === studentArrow?.to)
+      return {
+        itemId: ca.from,
+        label: fromItem?.texto || ca.from,
+        studentAnswer: studentToItem?.texto || studentArrow?.to || '(sin respuesta)',
+        correctAnswer: toItem?.texto || ca.to,
+        isCorrect: studentArrow?.to === ca.to
+      }
+    })
+  }
+
+  // SEQUENCE_ORDER
+  if (activity.tipo === 'SEQUENCE_ORDER') {
+    const studentSeq: string[] = respuesta.sequence || []
+    const correctSeq: string[] = activity.claveRespuestas.sequence || []
+    const items: any[] = activity.contenido?.items || []
+    return correctSeq.map((id, idx) => {
+      const item = items.find((i: any) => i.id === id)
+      const studentId = studentSeq[idx]
+      const studentItem = items.find((i: any) => i.id === studentId)
+      return {
+        itemId: id,
+        label: `Posición ${idx + 1}`,
+        studentAnswer: studentItem?.texto || studentId || '(sin respuesta)',
+        correctAnswer: item?.texto || id,
+        isCorrect: studentId === id
+      }
+    })
+  }
+
+  // TRAFFIC_LIGHT
+  if (activity.tipo === 'TRAFFIC_LIGHT') {
+    const studentLight: Record<string, string> = respuesta.trafficLight || {}
+    const correctLight: Record<string, string> = activity.claveRespuestas.trafficLight || {}
+    const fuentes: any[] = activity.contenido?.fuentes || []
+    const colorLabel: Record<string, string> = { green: '✅ Confiable', yellow: '⚠️ Dudosa', red: '❌ No confiable' }
+    return Object.entries(correctLight).map(([id, correctColor]) => {
+      const fuente = fuentes.find((f: any) => f.id === id)
+      const studentColor = studentLight[id] || ''
+      return {
+        itemId: id,
+        label: fuente?.nombre || id,
+        studentAnswer: colorLabel[studentColor] || studentColor || '(sin respuesta)',
+        correctAnswer: colorLabel[correctColor] || correctColor,
+        isCorrect: studentColor === correctColor
+      }
+    })
+  }
+
+  // DRAG_AND_DROP
+  if (activity.tipo === 'DRAG_AND_DROP') {
+    const mapping = activity.claveRespuestas.mapping || {}
+    const studentMapping = respuesta.mapping || respuesta
+    const items: any[] = activity.contenido?.items || []
+    const categorias: any[] = activity.contenido?.categorias || []
+    const isCategoryKeyed = Object.values(studentMapping).some(v => Array.isArray(v))
+    const flatStudentMap: Record<string, string> = {}
+    if (isCategoryKeyed) {
+      for (const [catId, itemArr] of Object.entries(studentMapping)) {
+        if (Array.isArray(itemArr)) itemArr.forEach((itemId: string) => { flatStudentMap[itemId] = catId })
+      }
+    } else {
+      Object.assign(flatStudentMap, studentMapping)
+    }
+    return items.map(item => {
+      const correctCatId = mapping[item.id]
+      const studentCatId = flatStudentMap[item.id] || ''
+      const correctCat = categorias.find((c: any) => c.id === correctCatId)
+      const studentCat = categorias.find((c: any) => c.id === studentCatId)
+      return {
+        itemId: item.id,
+        label: item.texto,
+        studentAnswer: studentCat?.label || studentCatId || '(sin respuesta)',
+        correctAnswer: correctCat?.label || correctCatId,
+        isCorrect: studentCatId === correctCatId
+      }
+    })
+  }
+
+  return []
+}
+
+/**
  * Función Maestra: Evalúa una actividad y produce una decisión pedagógica
  */
 export function evaluateActivity(activity: any, respuesta: any, context: { priorConfidence: number, timeSeconds: number, student?: StudentModel }) {
   // 1. Calcular Desempeño Base
   let baseScore = calculateBaseScore(activity, respuesta)
+  const itemBreakdown = getItemBreakdown(activity, respuesta)
   
   // Escalar por puntajeMaximo si es menor a 100 (ej. Actividad de Refuerzo de 40-70 puntos)
   if (activity.puntajeMaximo && activity.puntajeMaximo < 100) {
@@ -70,8 +295,8 @@ export function evaluateActivity(activity: any, respuesta: any, context: { prior
   if (activity.tipo === 'MULTIPLE_CHOICE_REASONED') {
     const studentChoice = respuesta.selectedId || respuesta
     const option = activity.contenido.opciones?.find((o: any) => o.id === studentChoice)
-    if (option?.justa) {
-      specificJustification = option.justa
+    if (option?.feedback || option?.justa) {
+      specificJustification = option.feedback || option.justa
     }
   }
 
@@ -106,7 +331,7 @@ export function evaluateActivity(activity: any, respuesta: any, context: { prior
   // 5. Determinar Acción Siguiente y Mensaje
   const decision = getNextAction(student, result, scoreDetails, specificJustification)
   
-  return decision
+  return { ...decision, itemBreakdown }
 }
 
 /**

@@ -1,110 +1,155 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { VueDraggableNext as draggable } from 'vue-draggable-next'
+import { ref, computed, watch, onMounted } from 'vue'
 
 const props = defineProps<{
   contenido: {
-    items: Array<{ id: string, texto: string }>
-    categories: Array<{ id: string, nombre: string, description?: string }>
+    items: Array<{ id: string; texto: string; categoriaCorrecta?: string }>
+    // La DB guarda como 'categorias' (español), pero por compatibilidad aceptamos ambos
+    categorias?: Array<{ id: string; label: string }>
+    categories?: Array<{ id: string; nombre?: string; label?: string; description?: string }>
   }
-  modelValue: Record<string, string[]> // Mapping categoryId -> itemIds[]
+  modelValue: any
 }>()
 
 const emit = defineEmits(['update:modelValue'])
 
-// Estado local para los grupos de arrastre
-const groups = ref<Record<string, any[]>>({
-  unassigned: [...props.contenido.items]
-})
-
-// Inicializar categorías en el objeto groups
-props.contenido.categories.forEach(cat => {
-  groups.value[cat.id] = []
-})
-
-// Si ya hay un modelValue (ej: al reanudar), poblar los grupos
-onMounted(() => {
-  if (props.modelValue && Object.keys(props.modelValue).length > 0) {
-    // Implementar si es necesario persistir el estado a mitad de actividad
+// Normalizar categorías sin importar si vienen como 'categorias' o 'categories'
+const categorias = computed(() => {
+  if (props.contenido.categorias?.length) {
+    return props.contenido.categorias.map(c => ({ id: c.id, label: c.label }))
   }
+  if (props.contenido.categories?.length) {
+    return props.contenido.categories.map(c => ({ id: c.id, label: c.nombre || c.label || c.id }))
+  }
+  return []
 })
 
-const handleChange = () => {
-  const result: Record<string, string[]> = {}
-  props.contenido.categories.forEach(cat => {
-    result[cat.id] = groups.value[cat.id].map(item => item.id)
-  })
-  emit('update:modelValue', result)
+// Mapa: categoriaId → items asignados
+const assigned = ref<Record<string, Array<{ id: string; texto: string }>>>({})
+const unassigned = ref<Array<{ id: string; texto: string }>>([])
+
+onMounted(() => {
+  // Inicializar columnas vacías
+  for (const cat of categorias.value) {
+    assigned.value[cat.id] = []
+  }
+  // Todos los items van a sin asignar al inicio
+  unassigned.value = [...props.contenido.items]
+  emitAnswer()
+})
+
+const emitAnswer = () => {
+  // Formato: { mapping: { itemId: catId } }
+  const mapping: Record<string, string> = {}
+  for (const [catId, items] of Object.entries(assigned.value)) {
+    for (const item of items) {
+      mapping[item.id] = catId
+    }
+  }
+  emit('update:modelValue', { mapping })
+}
+
+const assignItem = (item: { id: string; texto: string }, catId: string) => {
+  // Quitar de donde estaba
+  unassigned.value = unassigned.value.filter(i => i.id !== item.id)
+  for (const cat of categorias.value) {
+    assigned.value[cat.id] = assigned.value[cat.id].filter(i => i.id !== item.id)
+  }
+  // Asignar a la nueva categoría
+  assigned.value[catId] = [...(assigned.value[catId] || []), item]
+  emitAnswer()
+}
+
+const unassignItem = (item: { id: string; texto: string }) => {
+  for (const cat of categorias.value) {
+    assigned.value[cat.id] = assigned.value[cat.id].filter(i => i.id !== item.id)
+  }
+  if (!unassigned.value.find(i => i.id === item.id)) {
+    unassigned.value = [...unassigned.value, item]
+  }
+  emitAnswer()
 }
 </script>
 
 <template>
-  <div class="space-y-8">
-    
-    <!-- Zona de Items sin asignar -->
-    <div class="bg-slate-50 p-6 rounded-2xl border-2 border-dashed border-slate-200">
-      <h4 class="text-sm font-bold text-slate-800 uppercase tracking-widest mb-4">Elementos a clasificar</h4>
-      <draggable 
-        class="flex flex-wrap gap-3 min-h-[60px]" 
-        :list="groups.unassigned" 
-        group="items"
-        @change="handleChange"
-      >
-        <div 
-          v-for="item in groups.unassigned" 
-          :key="item.id"
-          class="px-4 py-2 bg-white border border-slate-200 rounded-xl shadow-sm cursor-move hover:border-indigo-400 transition-colors"
+  <div class="space-y-6 w-full">
+    <!-- Pregunta -->
+    <div v-if="contenido.pregunta || contenido.items">
+      <p class="text-[10px] font-black uppercase tracking-widest text-black mb-2">Instrucción</p>
+      <p class="text-base font-bold text-slate-700 leading-relaxed">{{ contenido.pregunta }}</p>
+    </div>
+
+    <!-- Guía interactiva -->
+    <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 flex gap-3">
+      <span class="text-lg">💡</span>
+      <div>
+        <p class="text-[9px] font-black uppercase tracking-widest text-indigo-700">Guía de interacción</p>
+        <p class="text-xs font-semibold text-indigo-900 mt-0.5 leading-relaxed">
+          Haz clic en los botones "+" ubicados bajo cada categoría de destino para asignar los elementos disponibles del banco. Puedes reasignar un elemento haciendo clic en la "✕" al lado de su nombre para devolverlo al banco.
+        </p>
+      </div>
+    </div>
+
+    <!-- Items sin asignar (banco) -->
+    <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-5">
+      <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Elementos disponibles</p>
+      <div v-if="unassigned.length === 0" class="text-center py-3 text-slate-400 text-sm italic">
+        ✨ Todos los elementos han sido clasificados
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="item in unassigned" :key="item.id"
+          class="px-4 py-2 bg-white border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:border-indigo-400 hover:bg-indigo-50 transition-all cursor-pointer"
+          @click="() => {}"
         >
           {{ item.texto }}
-        </div>
-      </draggable>
-      <div v-if="groups.unassigned.length === 0" class="text-center py-2 text-black text-sm">
-        Todos los elementos han sido clasificados ✨
+          <span class="ml-2 text-slate-400 text-xs">↓ asignar abajo</span>
+        </button>
       </div>
     </div>
 
-    <!-- Categorías (Destinos) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div 
-        v-for="cat in contenido.categories" 
-        :key="cat.id"
-        class="flex flex-col h-full bg-white border-2 rounded-3xl transition-all duration-300"
-        :class="groups[cat.id].length > 0 ? 'border-indigo-100 ring-4 ring-indigo-50' : 'border-slate-100'"
+    <!-- Categorías destino -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div
+        v-for="cat in categorias" :key="cat.id"
+        class="bg-white border-2 rounded-3xl overflow-hidden transition-all"
+        :class="assigned[cat.id]?.length > 0 ? 'border-indigo-200' : 'border-slate-100'"
       >
-        <div class="p-5 border-b border-slate-100">
-          <h5 class="font-black text-slate-800">{{ cat.nombre }}</h5>
-          <p v-if="cat.description" class="text-xs text-slate-800 mt-1 leading-tight">{{ cat.description }}</p>
+        <!-- Cabecera categoría -->
+        <div class="p-4 bg-slate-50 border-b border-slate-100">
+          <p class="text-xs font-black uppercase tracking-widest text-slate-700">{{ cat.label }}</p>
         </div>
-        
-        <draggable 
-          class="flex-1 p-4 space-y-3 min-h-[150px]" 
-          :list="groups[cat.id]" 
-          group="items"
-          @change="handleChange"
-        >
-          <div 
-            v-for="item in groups[cat.id]" 
-            :key="item.id"
-            class="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl text-sm font-medium text-indigo-900 shadow-sm animate-in zoom-in-95 duration-200"
+
+        <!-- Items asignados -->
+        <div class="p-4 space-y-2 min-h-[80px]">
+          <div
+            v-for="item in assigned[cat.id]" :key="item.id"
+            class="flex items-center justify-between px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-2xl"
           >
-            {{ item.texto }}
+            <span class="text-sm font-bold text-indigo-900">{{ item.texto }}</span>
+            <button
+              @click="unassignItem(item)"
+              class="ml-3 text-indigo-400 hover:text-red-500 text-lg leading-none transition-all"
+              title="Quitar"
+            >×</button>
           </div>
-        </draggable>
-        
-        <div v-if="groups[cat.id].length === 0" class="p-4 text-center text-xs text-black italic">
-          Arrastra elementos aquí
+          <div v-if="!assigned[cat.id]?.length" class="text-center py-2 text-slate-300 text-xs italic">
+            Sin elementos aún
+          </div>
+        </div>
+
+        <!-- Botones para asignar desde el banco -->
+        <div v-if="unassigned.length > 0" class="px-4 pb-4 space-y-1">
+          <p class="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-2">Agregar a esta categoría:</p>
+          <button
+            v-for="item in unassigned" :key="`btn-${item.id}`"
+            @click="assignItem(item, cat.id)"
+            class="w-full text-left px-3 py-2 text-xs font-bold rounded-xl border border-dashed border-slate-200 text-slate-500 hover:border-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 transition-all"
+          >
+            + {{ item.texto }}
+          </button>
         </div>
       </div>
     </div>
-
   </div>
 </template>
-
-<style scoped>
-.cursor-move {
-  cursor: grab;
-}
-.cursor-move:active {
-  cursor: grabbing;
-}
-</style>

@@ -4,13 +4,64 @@ definePageMeta({
   middleware: ['auth', 'admin']
 })
 
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  ArcElement
+} from 'chart.js'
+import { Bar, Doughnut } from 'vue-chartjs'
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement)
+
 const { user } = useUserSession()
 
 const students = ref([])
 const groupStats = ref([])
-const frequentErrors = ref([])
+const frequentErrors = ref<any[]>([])
+const levelDistribution = ref<number[]>([0, 0, 0])
 const institucion = ref('')
 const isLoading = ref(true)
+
+// Configuración de Gráfica de Dona (Niveles)
+const doughnutChartData = computed(() => ({
+  labels: ['Básico', 'Intermedio', 'Avanzado'],
+  datasets: [{
+    data: levelDistribution.value,
+    backgroundColor: ['#10b981', '#6366f1', '#ef4444'],
+    hoverOffset: 4
+  }]
+}))
+const doughnutChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { position: 'bottom' as const }
+  }
+}
+
+// Configuración de Gráfica de Barras (Errores)
+const barChartData = computed(() => ({
+  labels: frequentErrors.value.map(e => e.type.length > 20 ? e.type.substring(0, 20) + '...' : e.type),
+  datasets: [{
+    label: 'Alumnos',
+    data: frequentErrors.value.map(e => e.count),
+    backgroundColor: '#f97316',
+    borderRadius: 8
+  }]
+}))
+const barChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+  plugins: {
+    legend: { display: false }
+  }
+}
 
 onMounted(async () => {
   try {
@@ -18,6 +69,7 @@ onMounted(async () => {
     students.value = data.students
     groupStats.value = data.groupStats
     frequentErrors.value = data.frequentErrors
+    levelDistribution.value = data.levelDistribution || [0, 0, 0]
     institucion.value = data.institucion || ''
   } catch (error) {
     console.error('Error cargando analítica real:', error)
@@ -82,6 +134,27 @@ const filteredStudents = computed(() => {
           <div>
             <p class="text-3xl font-black text-black font-mono">{{ stat.value }}</p>
             <h3 class="text-[10px] font-black uppercase tracking-widest text-black">{{ stat.label }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficas Estadísticas -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <!-- Gráfica de Distribución de Niveles -->
+        <div class="bg-white p-8 rounded-[40px] shadow-xl border-2 border-slate-50 space-y-6">
+          <h2 class="text-xs font-black uppercase tracking-[0.4em] text-black text-center">Distribución de Niveles</h2>
+          <div v-if="isLoading" class="h-64 bg-slate-50 animate-pulse rounded-3xl"></div>
+          <div v-else class="h-64 flex justify-center">
+             <Doughnut :data="doughnutChartData" :options="doughnutChartOptions" />
+          </div>
+        </div>
+
+        <!-- Gráfica de Errores Frecuentes -->
+        <div class="bg-white p-8 rounded-[40px] shadow-xl border-2 border-orange-50 space-y-6">
+          <h2 class="text-xs font-black uppercase tracking-[0.4em] text-orange-600 text-center">Top Errores Detectados</h2>
+          <div v-if="isLoading" class="h-64 bg-orange-50 animate-pulse rounded-3xl"></div>
+          <div v-else class="h-64">
+             <Bar :data="barChartData" :options="barChartOptions" />
           </div>
         </div>
       </div>
