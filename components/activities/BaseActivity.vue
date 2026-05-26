@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useStudentStore } from '~/stores/student'
 
 const props = defineProps<{
   title: string
@@ -25,6 +26,8 @@ const props = defineProps<{
 
 const emit = defineEmits(['start', 'submit', 'pauseMetacognitiva', 'update:priorConfidence', 'requestHelp'])
 
+const studentStore = useStudentStore()
+
 const isEvaluating = computed(() => props.state === 'evaluating')
 const localConfidence = computed({
   get: () => props.priorConfidence || 0,
@@ -37,59 +40,121 @@ const canSubmit = computed(() => {
 
 // Efecto de brillo al 90% (Sección 9.4)
 const levelBarGlow = computed(() => props.progress.level >= 90)
+
+const phaseInfo = computed(() => {
+  const phase = studentStore.progress.phase
+  if (phase === 'ANALYSIS') {
+    return {
+      label: 'Fase 1: Análisis de Información',
+      icon: '🔍',
+      color: 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/30 border-emerald-400'
+    }
+  } else if (phase === 'EVALUATION') {
+    return {
+      label: 'Fase 2: Evaluación de Información',
+      icon: '⚖️',
+      color: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/30 border-indigo-400'
+    }
+  } else if (phase === 'JUDGMENT') {
+    return {
+      label: 'Fase 3: Formulación de Juicios',
+      icon: '📝',
+      color: 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30 border-rose-400'
+    }
+  }
+  return {
+    label: 'Entrenamiento Crítico',
+    icon: '🧠',
+    color: 'bg-slate-900 hover:bg-slate-950 text-white shadow-slate-900/30 border-slate-700'
+  }
+})
 </script>
+
 
 <template>
   <div class="max-w-5xl mx-auto bg-white border-2 border-slate-100 rounded-[48px] shadow-2xl overflow-hidden relative flex flex-col min-h-[650px] transition-all duration-500">
     
     <!-- Barra Superior con 3 Barras de Progreso (Sección 9.4) -->
     <header id="tour-progress-bars" v-if="state !== 'idle' && state !== 'checklist' && !isEvaluating" class="p-6 border-b border-slate-100 bg-white/50 backdrop-blur-md z-20">
-      <div class="flex flex-col md:flex-row gap-6 items-center">
+      <div class="flex flex-col md:flex-row gap-6 items-center w-full justify-between">
         
+        <!-- Banner de Fase Activa (Imposible de perder) -->
+        <div :class="['flex items-center gap-3 px-5 py-3 rounded-2xl border-2 font-black uppercase text-xs tracking-wider shadow-lg transition-all hover:scale-105 shrink-0 w-full md:w-auto justify-center', phaseInfo.color]">
+          <span class="text-xl animate-bounce-subtle">{{ phaseInfo.icon }}</span>
+          <div class="flex flex-col text-left">
+            <span class="text-[8px] text-white/80 font-black tracking-widest leading-none mb-0.5">Fase de Entrenamiento</span>
+            <span class="text-xs font-black tracking-tight leading-none text-white">{{ phaseInfo.label }}</span>
+          </div>
+        </div>
+
         <!-- Puntos Totales (Sección 9.2) -->
-        <div class="flex items-center gap-3 bg-slate-900 px-5 py-2 rounded-2xl shadow-lg transition-transform hover:scale-105 group">
+        <div class="flex items-center gap-3 bg-slate-900 px-5 py-2 rounded-2xl shadow-lg transition-transform hover:scale-105 group shrink-0">
           <span class="text-amber-400 text-lg">⭐</span>
           <span class="text-white font-black font-mono tracking-tighter text-xl">{{ totalPoints }}</span>
           <span class="text-[10px] text-white/50 font-bold uppercase tracking-widest hidden lg:block">Puntos</span>
         </div>
 
-        <!-- Las 3 Barras -->
-        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-          <!-- 1. Barra de Actividad Actual -->
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-[8px] font-black uppercase tracking-[0.2em] text-black">
-              <span>Actividad</span><span>{{ progress.activity }}%</span>
+        <!-- Los 3 Círculos de Progreso (Fondo amarillo aclarado y letras en negro) -->
+        <div class="flex-grow flex flex-row items-center justify-around gap-4 md:gap-8 bg-amber-50 border border-amber-200 rounded-[32px] p-3 max-w-lg shadow-inner w-full md:w-auto">
+          
+          <!-- 1. Círculo Actividad -->
+          <div class="flex items-center gap-3">
+            <div class="relative w-14 h-14 shrink-0 flex items-center justify-center">
+              <svg class="absolute inset-0 w-full h-full transform -rotate-90">
+                <circle cx="28" cy="28" r="22" stroke="#FFFDF9" stroke-width="4.5" fill="transparent" />
+                <circle cx="28" cy="28" r="22" stroke="#10B981" stroke-width="4.5" fill="transparent"
+                        stroke-linecap="round"
+                        stroke-dasharray="138.2"
+                        :stroke-dashoffset="138.2 - (progress.activity / 100) * 138.2"
+                        class="transition-all duration-700 ease-out drop-shadow-[0_0_6px_rgba(16,185,129,0.3)]" />
+              </svg>
+              <span class="text-xs font-black text-slate-950 font-mono z-10">{{ progress.activity }}%</span>
             </div>
-            <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full bg-emerald-500 transition-all duration-700" :style="{ width: `${progress.activity}%` }"></div>
+            <div class="hidden sm:flex flex-col">
+              <span class="text-[8px] font-black uppercase tracking-wider text-amber-800/80 leading-tight">Actividad</span>
+              <span class="text-[10px] font-black text-slate-900 leading-none">Desafío</span>
             </div>
           </div>
 
-          <!-- 2. Barra de Fase Actual -->
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-[8px] font-black uppercase tracking-[0.2em] text-indigo-500">
-              <span>Fase Actual</span><span>{{ progress.phase }}%</span>
+          <!-- 2. Círculo Fase -->
+          <div class="flex items-center gap-3">
+            <div class="relative w-14 h-14 shrink-0 flex items-center justify-center">
+              <svg class="absolute inset-0 w-full h-full transform -rotate-90">
+                <circle cx="28" cy="28" r="22" stroke="#FFFDF9" stroke-width="4.5" fill="transparent" />
+                <circle cx="28" cy="28" r="22" stroke="#6366F1" stroke-width="4.5" fill="transparent"
+                        stroke-linecap="round"
+                        stroke-dasharray="138.2"
+                        :stroke-dashoffset="138.2 - (progress.phase / 100) * 138.2"
+                        class="transition-all duration-700 ease-out drop-shadow-[0_0_6px_rgba(99,102,241,0.3)]" />
+              </svg>
+              <span class="text-xs font-black text-slate-950 font-mono z-10">{{ progress.phase }}%</span>
             </div>
-            <div class="h-1.5 w-full bg-indigo-100 rounded-full overflow-hidden">
-              <div class="h-full bg-indigo-500 transition-all duration-700" :style="{ width: `${progress.phase}%` }"></div>
+            <div class="hidden sm:flex flex-col">
+              <span class="text-[8px] font-black uppercase tracking-wider text-amber-800/80 leading-tight">Fase Actual</span>
+              <span class="text-[10px] font-black text-indigo-700 leading-none">Ruta</span>
             </div>
           </div>
 
-          <!-- 3. Barra de Nivel Completo -->
-          <div class="space-y-1.5 relative">
-            <div class="flex justify-between text-[8px] font-black uppercase tracking-[0.2em] text-amber-500">
-              <span>Progreso Nivel</span><span>{{ progress.level }}%</span>
+          <!-- 3. Círculo Nivel -->
+          <div class="flex items-center gap-3">
+            <div class="relative w-14 h-14 shrink-0 flex items-center justify-center">
+              <svg class="absolute inset-0 w-full h-full transform -rotate-90">
+                <circle cx="28" cy="28" r="22" stroke="#FFFDF9" stroke-width="4.5" fill="transparent" />
+                <circle cx="28" cy="28" r="22" stroke="#F59E0B" stroke-width="4.5" fill="transparent"
+                        stroke-linecap="round"
+                        stroke-dasharray="138.2"
+                        :stroke-dashoffset="138.2 - (progress.level / 100) * 138.2"
+                        class="transition-all duration-1000 ease-out drop-shadow-[0_0_6px_rgba(245,158,11,0.3)]"
+                        :class="levelBarGlow ? 'animate-pulse' : ''" />
+              </svg>
+              <span class="text-xs font-black text-slate-950 font-mono z-10">{{ progress.level }}%</span>
             </div>
-            <div class="h-1.5 w-full bg-amber-100 rounded-full overflow-hidden">
-              <div 
-                class="h-full bg-amber-500 transition-all duration-1000 relative" 
-                :class="levelBarGlow ? 'animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.8)]' : ''"
-                :style="{ width: `${progress.level}%` }"
-              >
-                <div v-if="levelBarGlow" class="absolute inset-0 bg-white/30 animate-flash"></div>
-              </div>
+            <div class="hidden sm:flex flex-col">
+              <span class="text-[8px] font-black uppercase tracking-wider text-amber-800/80 leading-tight">Progreso</span>
+              <span class="text-[10px] font-black text-amber-700 leading-none">Nivel</span>
             </div>
           </div>
+
         </div>
 
         <!-- Timer + Badge de Nivel -->
@@ -208,4 +273,12 @@ const levelBarGlow = computed(() => props.progress.level >= 90)
   100% { transform: translateX(200%); }
 }
 .animate-flash { animation: flash 2s infinite linear; }
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
 </style>
