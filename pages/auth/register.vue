@@ -82,6 +82,12 @@ const handleRegister = async () => {
     // Mostrar el código al usuario inmediatamente antes de redirigir
     window.alert(`¡Registro exitoso!\n\nTu código de acceso es: ${response.user.studentCode}\n\nPor favor, anótalo y guárdalo en un lugar seguro, lo necesitarás siempre para iniciar sesión.`)
 
+    // Resetear banderas del tour en localStorage para garantizar que el nuevo estudiante vea el tutorial
+    if (selectedRole.value === 'STUDENT' && typeof window !== 'undefined') {
+      localStorage.removeItem('simect_tour_done_dashboard')
+      localStorage.removeItem('simect_tour_done_learn')
+    }
+
     await refreshSession()
     
     if (selectedRole.value === 'TEACHER') {

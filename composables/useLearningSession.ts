@@ -51,10 +51,14 @@ export function useLearningSession() {
    *   → CHECKLIST_PENDING (planeación de sesión)
    * - De lo contrario → ACTIVITY_PRESENTATION
    */
-  const isFirstTimeStudent = studentStore.isChecklistPending && studentStore.progress.activitiesCompleted === 0
+  const isFirstTimeStudent = computed(() => {
+    return studentStore.progress.phase === 'ANALYSIS' &&
+           studentStore.isChecklistPending &&
+           studentStore.progress.activitiesCompleted === 0
+  })
 
   const currentState = ref<SessionState>(
-    isFirstTimeStudent
+    isFirstTimeStudent.value
       ? 'ONBOARDING'
       : studentStore.isChecklistPending
         ? 'CHECKLIST_PENDING'
@@ -136,7 +140,7 @@ export function useLearningSession() {
         }
       } else {
         studentStore.requestChecklist()
-        currentState.value = isFirstTimeStudent ? 'ONBOARDING' : 'CHECKLIST_PENDING'
+        currentState.value = isFirstTimeStudent.value ? 'ONBOARDING' : 'CHECKLIST_PENDING'
       }
 
       const list = response.data || []
