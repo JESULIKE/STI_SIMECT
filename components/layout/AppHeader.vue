@@ -2,11 +2,13 @@
 import { useStudentStore } from '~/stores/student'
 import { useKitStore } from '~/stores/kit'
 import StreakCounter from '~/components/gamification/StreakCounter.vue'
+import { useTourStore, type TourStep } from '~/stores/tour'
 
 const studentStore = useStudentStore()
 const kit = useKitStore()
 const { user, clear } = useUserSession()
 const route = useRoute()
+const tourStore = useTourStore()
 
 const mobileMenuOpen = ref(false)
 const closeMobile = () => { mobileMenuOpen.value = false }
@@ -45,6 +47,139 @@ watch(() => studentStore.progress.totalPoints, (newVal, oldVal) => {
     setTimeout(() => isPulsing.value = false, 600)
   }
 })
+
+const triggerTour = () => {
+  if (route.path.includes('/dashboard')) {
+    const dashboardSteps: TourStep[] = [
+      {
+        target: null,
+        title: '¡Bienvenido al Tutor SIMECT! 🧠',
+        description: 'Este es tu espacio de entrenamiento para agudizar tu mente. Te guiaremos en un breve recorrido para que conozcas cómo funciona.',
+        emoji: '✨',
+        position: 'center'
+      },
+      {
+        target: '#tour-stats-panel',
+        title: 'Tus Estadísticas Clave 🏆',
+        description: 'Aquí ves tus Puntos totales, la Fase actual, tu Racha de días consecutivos y tu nivel de entrenamiento.',
+        emoji: '📊',
+        position: 'bottom'
+      },
+      {
+        target: '#tour-learning-map',
+        title: 'Mapa de Aprendizaje 🗺️',
+        description: 'Esta ruta muestra tu camino. Cada fase tiene subfases obligatorias con barras individuales de progreso.',
+        emoji: '🗺️',
+        position: 'bottom'
+      },
+      {
+        target: '#tour-continue-btn',
+        title: 'Entrar en Acción 🚀',
+        description: '¡Haz clic aquí para continuar directamente con tu siguiente desafío de aprendizaje!',
+        emoji: '⚡',
+        position: 'top'
+      },
+      {
+        target: '#tour-narrative-panel',
+        title: 'Historias e Insignias 🏅',
+        description: 'Descubre los fragmentos de historia que has desbloqueado y las insignias que demuestran tu nivel.',
+        emoji: '🎁',
+        position: 'left'
+      },
+      {
+        target: '#tour-kit-btn',
+        title: 'Tu Kit de Herramientas 🧰',
+        description: 'Aquí se guardan las herramientas (hechos y falacias) que vas descubriendo en las historias. ¡Consúltalas siempre que las necesites!',
+        emoji: '🧰',
+        position: 'bottom'
+      },
+      {
+        target: null,
+        title: '¡Listo para empezar! 🚀',
+        description: 'Ya conoces tu centro de operaciones. ¡Comienza a resolver retos y demuestra tu agudeza mental!',
+        emoji: '🧠',
+        position: 'center'
+      }
+    ]
+    tourStore.startTour('dashboard', dashboardSteps)
+  } else if (route.path.includes('/learn/')) {
+    const learnSteps: TourStep[] = [
+      {
+        target: null,
+        title: '¡Bienvenido a la Sala de Desafíos! 🎮',
+        description: 'Aquí resolverás diversos retos interactivos para entrenar tu pensamiento crítico. Veamos qué tiene esta pantalla.',
+        emoji: '💡',
+        position: 'center'
+      },
+      {
+        target: '#tour-progress-bars',
+        title: 'Tu Progreso en Tiempo Real 📈',
+        description: 'Estas barras muestran tu avance en la actividad actual, en la fase en la que te encuentras y en tu nivel global.',
+        emoji: '📊',
+        position: 'bottom'
+      },
+      {
+        target: '#tour-story-btn',
+        title: 'Releer la Historia 📖',
+        description: 'Si tienes dudas o necesitas recordar el contexto de Mateo y su entorno, puedes presionar este botón para abrir la historia en cualquier momento.',
+        emoji: '📚',
+        position: 'bottom'
+      },
+      {
+        target: '#tour-workspace',
+        title: 'Espacio de Trabajo 🛠️',
+        description: 'Esta es la zona de juego principal donde interactúas, seleccionas, clasificas o respondes los retos planteados.',
+        emoji: '🧠',
+        position: 'top'
+      },
+      {
+        target: '#tour-confidence',
+        title: 'Confianza Metacognitiva ⭐',
+        description: 'Valora tu seguridad antes de responder: 1 estrella si dudas, 2 si tienes confianza, o 3 si estás totalmente seguro de tu respuesta. ¡Esto ayuda a tu entrenamiento mental!',
+        emoji: '🧠',
+        position: 'top'
+      },
+      {
+        target: '#tour-submit',
+        title: 'Enviar Solución ⚡',
+        description: 'Una vez respondido el reto y seleccionada tu confianza, presiona este botón para que nuestro motor analice tu respuesta y te dé feedback inmediato.',
+        emoji: '🚀',
+        position: 'top'
+      },
+      {
+        target: '#tour-help-btn',
+        title: 'Pistas del Tutor ❔',
+        description: '¿Te sientes atascado? No te preocupes. Haz clic en este botón de interrogación para pedirle una pista estratégica al tutor.',
+        emoji: '🤝',
+        position: 'top'
+      },
+      {
+        target: null,
+        title: '¡Todo listo! 🌟',
+        description: '¡Ahora conoces a la perfección todas las herramientas! Demuestra tu agudeza mental resolviendo los retos.',
+        emoji: '🧠',
+        position: 'center'
+      }
+    ]
+    tourStore.startTour('learn', learnSteps)
+  } else {
+    const genericSteps: TourStep[] = [
+      {
+        target: null,
+        title: 'Tutor Inteligente SIMECT 🧠',
+        description: 'Estamos aquí para ayudarte a desarrollar habilidades de de pensamiento analítico y toma de decisiones en tiempo real.',
+        emoji: '✨',
+        position: 'center'
+      }
+    ]
+    tourStore.startTour('generic', genericSteps)
+  }
+}
+
+const triggerTourMobile = () => {
+  closeMobile()
+  triggerTour()
+}
 </script>
 
 <template>
@@ -75,8 +210,20 @@ watch(() => studentStore.progress.totalPoints, (newVal, oldVal) => {
           <span class="font-black text-sm">{{ studentStore.progress.totalPoints }}</span>
         </div>
         <StreakCounter />
+        <!-- Botón Guía Desktop -->
+        <button
+          v-if="user?.role === 'STUDENT'"
+          @click="triggerTour"
+          class="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95"
+          title="Ver explicación guiada de esta pantalla"
+        >
+          <span class="text-base leading-none">💡</span>
+          <span>Guía</span>
+        </button>
+
         <!-- Kit -->
         <button
+          id="tour-kit-btn"
           v-if="user?.role === 'STUDENT'"
           @click="kit.toggle()"
           :class="['relative flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all', kit.isOpen ? 'bg-blue-600 text-white shadow-md' : 'bg-blue-50 text-blue-600 hover:bg-blue-100']"
@@ -146,6 +293,16 @@ watch(() => studentStore.progress.totalPoints, (newVal, oldVal) => {
           <span class="text-xl">{{ item.icon }}</span>
           {{ item.name }}
         </NuxtLink>
+
+        <!-- Guía móvil -->
+        <button
+          v-if="user?.role === 'STUDENT'"
+          @click="triggerTourMobile"
+          class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-all mt-1"
+        >
+          <span class="text-xl">💡</span>
+          Iniciar Guía
+        </button>
 
         <!-- Logout móvil -->
         <button @click="handleLogout"

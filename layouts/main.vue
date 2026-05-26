@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppHeader from '~/components/layout/AppHeader.vue'
 import KitHerramientas from '~/components/ui/KitHerramientas.vue'
+import InteractiveTour from '~/components/ui/InteractiveTour.vue'
 </script>
 
 <template>
@@ -13,5 +14,7 @@ import KitHerramientas from '~/components/ui/KitHerramientas.vue'
     </div>
     <!-- Kit de Herramientas — disponible en toda la app -->
     <KitHerramientas />
+    <!-- Guía Interactiva Spotlight -->
+    <InteractiveTour />
   </div>
 </template>

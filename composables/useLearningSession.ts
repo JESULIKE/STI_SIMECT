@@ -146,6 +146,14 @@ export function useLearningSession() {
         studentStore.updateProgressBars(response.progressBars)
       }
 
+      // Si el checklist o el onboarding están pendientes, no debemos pre-cargar la actividad
+      // ni procesar el cambio de subfase o mostrar la narrativa (contexto) de forma prematura.
+      // Esperaremos a que el estudiante complete el checklist para cargar la actividad.
+      if (!response.hasCompletedChecklist) {
+        currentActivityData.value = null
+        return
+      }
+
       if (response.firstActivity) {
         currentActivityData.value = response.firstActivity
         activityManager.resetTimer()

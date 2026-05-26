@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useTourStore, type TourStep } from '~/stores/tour'
+
 definePageMeta({ layout: 'main' })
 const studentStore = useStudentStore()
 const { user } = useUserSession()
 const router = useRouter()
+const tourStore = useTourStore()
 
 const isLoading = ref(true)
 const realPhases = ref([])
@@ -29,6 +32,65 @@ onMounted(async () => {
     console.error('Error cargando Dashboard real:', error)
   } finally {
     isLoading.value = false
+    
+    // Auto-disparar el tour en el primer ingreso si es estudiante
+    if (user.value?.role === 'STUDENT') {
+      const dashboardSteps: TourStep[] = [
+        {
+          target: null,
+          title: '¡Bienvenido al Tutor SIMECT! 🧠',
+          description: 'Este es tu espacio de entrenamiento para agudizar tu mente. Te guiaremos en un breve recorrido para que conozcas cómo funciona.',
+          emoji: '✨',
+          position: 'center'
+        },
+        {
+          target: '#tour-stats-panel',
+          title: 'Tus Estadísticas Clave 🏆',
+          description: 'Aquí ves tus Puntos totales, la Fase actual, tu Racha de días consecutivos y tu nivel de entrenamiento.',
+          emoji: '📊',
+          position: 'bottom'
+        },
+        {
+          target: '#tour-learning-map',
+          title: 'Mapa de Aprendizaje 🗺️',
+          description: 'Esta ruta muestra tu camino. Cada fase tiene subfases obligatorias con barras individuales de progreso.',
+          emoji: '🗺️',
+          position: 'bottom'
+        },
+        {
+          target: '#tour-continue-btn',
+          title: 'Entrar en Acción 🚀',
+          description: '¡Haz clic aquí para continuar directamente con tu siguiente desafío de aprendizaje!',
+          emoji: '⚡',
+          position: 'top'
+        },
+        {
+          target: '#tour-narrative-panel',
+          title: 'Historias e Insignias 🏅',
+          description: 'Descubre los fragmentos de historia que has desbloqueado y las insignias que demuestran tu nivel.',
+          emoji: '🎁',
+          position: 'left'
+        },
+        {
+          target: '#tour-kit-btn',
+          title: 'Tu Kit de Herramientas 🧰',
+          description: 'Aquí se guardan las herramientas (hechos y falacias) que vas descubriendo en las historias. ¡Consúltalas siempre que las necesites!',
+          emoji: '🧰',
+          position: 'bottom'
+        },
+        {
+          target: null,
+          title: '¡Listo para empezar! 🚀',
+          description: 'Ya conoces tu centro de operaciones. ¡Comienza a resolver retos y demuestra tu agudeza mental!',
+          emoji: '🧠',
+          position: 'center'
+        }
+      ]
+      // Pequeño timeout para que el layout se cargue y los elementos estén listos en el DOM
+      setTimeout(() => {
+        tourStore.autoStart('dashboard', dashboardSteps)
+      }, 500)
+    }
   }
 })
 
@@ -128,7 +190,7 @@ const floatingEmojis = [
           <p class="text-black font-medium italic mt-2">Tu camino de aprendizaje comienza aquí.</p>
         </div>
         
-        <div class="grid grid-cols-3 gap-3 w-full md:w-auto md:flex md:gap-4">
+        <div id="tour-stats-panel" class="grid grid-cols-3 gap-3 w-full md:w-auto md:flex md:gap-4">
           <div v-for="stat in stats" :key="stat.label"
                class="bg-white px-3 py-4 md:px-6 rounded-[32px] shadow-xl border-2 border-white flex flex-col items-center overflow-hidden">
             <span class="text-2xl mb-1">{{ stat.icon }}</span>
@@ -144,7 +206,7 @@ const floatingEmojis = [
         <div class="lg:col-span-2 space-y-8">
           <h2 class="text-xs font-black uppercase tracking-[0.4em] text-black px-2">Tu Mapa de Aprendizaje</h2>
           
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div id="tour-learning-map" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <template v-if="isLoading">
               <div v-for="i in 3" :key="i" class="h-48 bg-slate-100 animate-pulse rounded-[40px]"></div>
             </template>
@@ -186,7 +248,7 @@ const floatingEmojis = [
           </div>
 
           <!-- Botón de Continuar Gigante (Pantalla 2) -->
-          <button @click="handleContinue" 
+          <button id="tour-continue-btn" @click="handleContinue" 
                   class="w-full group relative overflow-hidden bg-emerald-500 hover:bg-emerald-400 p-12 rounded-[48px] shadow-2xl shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95 text-left">
             <div class="relative z-10">
               <span class="text-white/70 text-[10px] font-black uppercase tracking-[0.5em] block mb-2">Próximo Reto</span>
@@ -199,7 +261,7 @@ const floatingEmojis = [
         </div>
 
         <!-- Columna Derecha: Narrativa (Pantalla 3) -->
-        <div class="space-y-8">
+        <div id="tour-narrative-panel" class="space-y-8">
           <h2 class="text-xs font-black uppercase tracking-[0.4em] text-black px-2">Historias Desbloqueadas</h2>
           
           <div class="bg-indigo-600 rounded-[40px] p-8 shadow-2xl relative overflow-hidden group">

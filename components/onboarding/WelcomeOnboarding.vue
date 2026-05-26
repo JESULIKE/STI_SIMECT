@@ -62,6 +62,10 @@ const familiaridadLabel = computed(() => {
 
 onMounted(() => {
   generateConfetti()
+  // Limpiar subfases vistas al iniciar onboarding (ej. tras un reset de datos)
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem('simect_seen_subphases')
+  }
 })
 </script>
 
@@ -257,22 +261,6 @@ onMounted(() => {
         <!-- Imagen de Contexto -->
         <div class="mb-6 rounded-[24px] overflow-hidden border-2 border-slate-100 shadow-sm">
           <img src="/Contexto.png" alt="Inundaciones en Córdoba" class="w-full object-cover h-48 md:h-64 transition-transform hover:scale-105 duration-700" />
-        </div>
-
-        <!-- Datos clave del evento -->
-        <div class="grid grid-cols-3 gap-3 mt-4">
-          <div class="bg-blue-50 border-2 border-blue-100 rounded-3xl p-4 text-center">
-            <span class="block text-2xl font-black text-blue-700">7.5 m</span>
-            <span class="block text-[10px] font-black uppercase tracking-widest text-blue-600 mt-1">Nivel del río Sinú</span>
-          </div>
-          <div class="bg-slate-50 border-2 border-slate-100 rounded-3xl p-4 text-center">
-            <span class="block text-2xl font-black text-slate-700">40mm/h</span>
-            <span class="block text-[10px] font-black uppercase tracking-widest text-slate-600 mt-1">Lluvia registrada</span>
-          </div>
-          <div class="bg-amber-50 border-2 border-amber-100 rounded-3xl p-4 text-center">
-            <span class="block text-2xl font-black text-amber-700">90%</span>
-            <span class="block text-[10px] font-black uppercase tracking-widest text-amber-600 mt-1">Saturación del suelo</span>
-          </div>
         </div>
       </div>
 

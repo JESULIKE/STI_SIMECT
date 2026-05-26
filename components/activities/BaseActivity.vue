@@ -43,7 +43,7 @@ const levelBarGlow = computed(() => props.progress.level >= 90)
   <div class="max-w-5xl mx-auto bg-white border-2 border-slate-100 rounded-[48px] shadow-2xl overflow-hidden relative flex flex-col min-h-[650px] transition-all duration-500">
     
     <!-- Barra Superior con 3 Barras de Progreso (Sección 9.4) -->
-    <header v-if="state !== 'idle' && state !== 'checklist' && !isEvaluating" class="p-6 border-b border-slate-100 bg-white/50 backdrop-blur-md z-20">
+    <header id="tour-progress-bars" v-if="state !== 'idle' && state !== 'checklist' && !isEvaluating" class="p-6 border-b border-slate-100 bg-white/50 backdrop-blur-md z-20">
       <div class="flex flex-col md:flex-row gap-6 items-center">
         
         <!-- Puntos Totales (Sección 9.2) -->
@@ -116,6 +116,7 @@ const levelBarGlow = computed(() => props.progress.level >= 90)
 
     <!-- Botón de Ayuda Contextual -->
     <button 
+      id="tour-help-btn"
       v-if="state === 'in_progress'"
       @click="emit('requestHelp')"
       class="absolute bottom-8 right-8 z-30 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 group"
@@ -157,13 +158,13 @@ const levelBarGlow = computed(() => props.progress.level >= 90)
 
       <!-- Pantalla: Actividad en Curso -->
       <div v-if="state === 'in_progress'" class="p-8 md:p-12">
-        <div class="min-h-[40vh] mb-12">
+        <div id="tour-workspace" class="min-h-[40vh] mb-12">
           <slot />
         </div>
         
         <!-- Monitoreo de Confianza -->
         <div class="border-t-2 border-slate-50 pt-12 flex flex-col items-center space-y-10">
-          <div class="text-center space-y-4">
+          <div id="tour-confidence" class="text-center space-y-4">
             <span class="text-[10px] font-black uppercase tracking-[0.3em] text-black block">¿Qué tan seguro(a) estás de esta respuesta?</span>
             <div class="flex gap-4">
               <button 
@@ -180,6 +181,7 @@ const levelBarGlow = computed(() => props.progress.level >= 90)
           </div>
 
           <button 
+            id="tour-submit"
             :disabled="!canSubmit"
             @click="emit('submit')"
             class="px-24 py-6 font-black uppercase tracking-[0.5em] text-xs rounded-3xl transition-all shadow-2xl disabled:opacity-20 disabled:grayscale group"

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useStudentStore } from '~/stores/student'
 import { useLearningSession } from '~/composables/useLearningSession'
+import { useTourStore, type TourStep } from '~/stores/tour'
 
 import FeedbackPanel from '~/components/activity/FeedbackPanel.vue'
 import BaseActivity from '~/components/activities/BaseActivity.vue'
@@ -98,6 +99,76 @@ const handleRequestHelp = () => {
 watch(currentActivityData, () => {
   studentAnswer.value = {}
 })
+
+const tourStore = useTourStore()
+
+watch(currentState, (newState) => {
+  if ((newState === 'ACTIVITY_PRESENTATION' || newState === 'ACTIVITY_IN_PROGRESS') && user.value?.role === 'STUDENT') {
+    const learnSteps: TourStep[] = [
+      {
+        target: null,
+        title: '¡Bienvenido a la Sala de Desafíos! 🎮',
+        description: 'Aquí resolverás diversos retos interactivos para entrenar tu pensamiento crítico. Veamos qué tiene esta pantalla.',
+        emoji: '💡',
+        position: 'center'
+      },
+      {
+        target: '#tour-progress-bars',
+        title: 'Tu Progreso en Tiempo Real 📈',
+        description: 'Estas barras muestran tu avance en la actividad actual, en la fase en la que te encuentras y en tu nivel global.',
+        emoji: '📊',
+        position: 'bottom'
+      },
+      {
+        target: '#tour-story-btn',
+        title: 'Releer la Historia 📖',
+        description: 'Si tienes dudas o necesitas recordar el contexto de Mateo y su entorno, puedes presionar este botón para abrir la historia en cualquier momento.',
+        emoji: '📚',
+        position: 'bottom'
+      },
+      {
+        target: '#tour-workspace',
+        title: 'Espacio de Trabajo 🛠️',
+        description: 'Esta es la zona de juego principal donde interactúas, seleccionas, clasificas o respondes los retos planteados.',
+        emoji: '🧠',
+        position: 'top'
+      },
+      {
+        target: '#tour-confidence',
+        title: 'Confianza Metacognitiva ⭐',
+        description: 'Valora tu seguridad antes de responder: 1 estrella si dudas, 2 si tienes confianza, o 3 si estás totalmente seguro de tu respuesta. ¡Esto ayuda a tu entrenamiento mental!',
+        emoji: '🧠',
+        position: 'top'
+      },
+      {
+        target: '#tour-submit',
+        title: 'Enviar Solución ⚡',
+        description: 'Una vez respondido el reto y seleccionada tu confianza, presiona este botón para que nuestro motor analice tu respuesta y te dé feedback inmediato.',
+        emoji: '🚀',
+        position: 'top'
+      },
+      {
+        target: '#tour-help-btn',
+        title: 'Pistas del Tutor ❔',
+        description: '¿Te sientes atascado? No te preocupes. Haz clic en este botón de interrogación para pedirle una pista estratégica al tutor.',
+        emoji: '🤝',
+        position: 'top'
+      },
+      {
+        target: null,
+        title: '¡Todo listo! 🌟',
+        description: '¡Ahora conoces a la perfección todas las herramientas! Demuestra tu agudeza mental resolviendo los retos.',
+        emoji: '🧠',
+        position: 'center'
+      }
+    ]
+    
+    // Un pequeño timeout para que el DOM de la actividad esté renderizado por completo
+    setTimeout(() => {
+      tourStore.autoStart('learn', learnSteps)
+    }, 800)
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -154,6 +225,7 @@ watch(currentActivityData, () => {
     <!-- Botón flotante Ver Historia (siempre visible durante la actividad) -->
     <Transition name="slide-fade">
       <button
+        id="tour-story-btn"
         v-if="lastChapterData && (currentState === 'ACTIVITY_PRESENTATION' || currentState === 'ACTIVITY_IN_PROGRESS')"
         @click="reopenNarrative"
         class="fixed bottom-28 left-8 z-[90] flex items-center gap-2 bg-white border-2 border-slate-200 text-black font-black text-[10px] uppercase tracking-widest px-4 py-3 rounded-2xl shadow-xl hover:border-indigo-300 hover:bg-indigo-50 transition-all"
