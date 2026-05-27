@@ -11,16 +11,16 @@ import type { Level } from '@prisma/client'
  *   promedio  < 2.5  → BASIC
  */
 export function calcularNivelDesdeJOL(jol: {
-  seguridadSinAyuda?: number | null
-  seguridadTema?: number | null
-  atencionNumeros?: number | null
-  separacionArgumentos?: number | null
+  jol1?: number | null
+  jol2?: number | null
+  jol4?: number | null
+  jol5?: number | null
 }): Level {
   const scores = [
-    jol.seguridadSinAyuda,
-    jol.seguridadTema,
-    jol.atencionNumeros,
-    jol.separacionArgumentos
+    jol.jol1,
+    jol.jol2,
+    jol.jol4,
+    jol.jol5
   ].filter((v): v is number => typeof v === 'number' && v > 0)
 
   if (scores.length === 0) return 'BASIC'

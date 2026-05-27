@@ -55,11 +55,11 @@ const moveDown = (index: number) => {
     </div>
 
     <!-- Guía interactiva -->
-    <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 flex gap-3">
-      <span class="text-lg">💡</span>
+    <div class="bg-amber-100 border-2 border-amber-300 rounded-2xl p-6 flex gap-4 items-start shadow-sm">
+      <span class="text-3xl animate-bounce">💡</span>
       <div>
-        <p class="text-[9px] font-black uppercase tracking-widest text-indigo-700">Guía de interacción</p>
-        <p class="text-xs font-semibold text-indigo-900 mt-0.5 leading-relaxed">
+        <p class="text-sm font-black uppercase tracking-widest text-amber-900">Guía de interacción</p>
+        <p class="text-base font-bold text-amber-800 mt-1 leading-relaxed">
           Usa los botones ▲ y ▼ ubicados a la derecha de cada elemento para desplazarlos hacia arriba o hacia abajo en la lista hasta lograr el orden lógico correcto de 1 a {{ orderedItems.length }}.
         </p>
       </div>

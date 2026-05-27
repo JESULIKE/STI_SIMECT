@@ -91,22 +91,7 @@ onMounted(() => {
       </div>
 
       <!-- Datos clave destacados (cifras mencionadas en el texto) -->
-      <div v-if="chapterData.subPhase === '1.1'" class="grid grid-cols-3 gap-4 mb-10">
-        <div class="bg-slate-50 border-2 border-slate-100 rounded-3xl p-5 text-center">
-          <span class="block text-2xl font-black text-indigo-600">7.5 m</span>
-          <span class="text-[10px] font-black uppercase tracking-widest text-black mt-1 block">Nivel del río</span>
-        </div>
-        <div class="bg-slate-50 border-2 border-slate-100 rounded-3xl p-5 text-center">
-          <span class="block text-2xl font-black text-indigo-600">40mm/h</span>
-          <span class="text-[10px] font-black uppercase tracking-widest text-black mt-1 block">Lluvia IDEAM</span>
-        </div>
-        <div class="bg-slate-50 border-2 border-slate-100 rounded-3xl p-5 text-center">
-          <span class="block text-2xl font-black text-indigo-600">90%</span>
-          <span class="text-[10px] font-black uppercase tracking-widest text-black mt-1 block">Saturación suelo</span>
-        </div>
-      </div>
-
-      <div v-else-if="chapterData.subPhase === '1.2'" class="grid grid-cols-2 gap-4 mb-10">
+      <div v-if="chapterData.subPhase === '1.2'" class="grid grid-cols-2 gap-4 mb-10">
         <div class="bg-slate-50 border-2 border-slate-100 rounded-3xl p-5 flex items-center gap-4">
           <span class="text-3xl">🏃</span>
           <div>

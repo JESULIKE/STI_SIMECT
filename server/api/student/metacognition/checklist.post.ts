@@ -14,10 +14,10 @@ export default defineEventHandler(async (event) => {
   try {
     // ── Calcular nivel desde las respuestas JOL ──────────────────────────
     const nivelAsignado: Level = calcularNivelDesdeJOL({
-      seguridadSinAyuda:    body.seguridadSinAyuda    ? parseInt(body.seguridadSinAyuda)    : null,
-      seguridadTema:        body.seguridadTema        ? parseInt(body.seguridadTema)        : null,
-      atencionNumeros:      body.atencionNumeros      ? parseInt(body.atencionNumeros)      : null,
-      separacionArgumentos: body.separacionArgumentos ? parseInt(body.separacionArgumentos) : null,
+      jol1: typeof body.jol1 === 'number' ? body.jol1 : null,
+      jol2: typeof body.jol2 === 'number' ? body.jol2 : null,
+      jol4: typeof body.jol4 === 'number' ? body.jol4 : null,
+      jol5: typeof body.jol5 === 'number' ? body.jol5 : null,
     })
 
     // ── Guardar checklist + nivel asignado en la BD ──────────────────────
@@ -33,12 +33,12 @@ export default defineEventHandler(async (event) => {
         // Nivel calculado
         nivelAsignado,
 
-        // Preguntas JOL de Planeación Metacognitiva
-        seguridadSinAyuda:      body.seguridadSinAyuda      ? parseInt(body.seguridadSinAyuda)      : null,
-        seguridadTema:          body.seguridadTema          ? parseInt(body.seguridadTema)          : null,
-        tiempoEstimadoFase1:    body.tiempoEstimadoFase1    ? parseInt(body.tiempoEstimadoFase1)    : null,
-        atencionNumeros:        body.atencionNumeros        ? parseInt(body.atencionNumeros)        : null,
-        separacionArgumentos:   body.separacionArgumentos   ? parseInt(body.separacionArgumentos)   : null,
+        // Preguntas JOL de Planeación Metacognitiva Dinámica
+        jol1: body.jol1 !== undefined ? Number(body.jol1) : null,
+        jol2: body.jol2 !== undefined ? Number(body.jol2) : null,
+        jol3: body.jol3 !== undefined ? Number(body.jol3) : null,
+        jol4: body.jol4 !== undefined ? Number(body.jol4) : null,
+        jol5: body.jol5 !== undefined ? Number(body.jol5) : null,
 
         // Campos legacy
         queSe:                   body.q1 || null,

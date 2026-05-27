@@ -13,29 +13,27 @@ export default defineEventHandler(async (event) => {
     const pointsAwarded = 5
 
     const result = await prisma.$transaction(async (tx) => {
-      // Registrar o actualizar el monitoreo para la subfase 1.1
+      // Registrar o actualizar el monitoreo para la subfase actual
+      const subPhase = body.subPhase || '1.1'
+      
       const monitoring = await tx.metacognitionMonitoring.upsert({
         where: {
           studentProfileId_subPhase: {
             studentProfileId,
-            subPhase: '1.1'
+            subPhase: subPhase
           }
         },
         update: {
-          atencionDetalle:    body.atencionDetalle,
-          filtroInformacion:  body.filtroInformacion,
-          conexionPlaneacion: body.conexionPlaneacion,
-          esfuerzoCognitivo:  body.esfuerzoCognitivo,
-          confianzaActual:    body.confianzaActual
+          monitoreo1: body.monitoreo1,
+          monitoreo2: body.monitoreo2,
+          monitoreo3: body.monitoreo3
         },
         create: {
           studentProfileId,
-          subPhase: '1.1',
-          atencionDetalle:    body.atencionDetalle,
-          filtroInformacion:  body.filtroInformacion,
-          conexionPlaneacion: body.conexionPlaneacion,
-          esfuerzoCognitivo:  body.esfuerzoCognitivo,
-          confianzaActual:    body.confianzaActual
+          subPhase: subPhase,
+          monitoreo1: body.monitoreo1,
+          monitoreo2: body.monitoreo2,
+          monitoreo3: body.monitoreo3
         }
       })
 

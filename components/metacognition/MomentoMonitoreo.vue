@@ -13,7 +13,7 @@
     <!-- Barra de Progreso del Stepper -->
     <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden shadow-inner flex">
       <div 
-        v-for="step in 5" 
+        v-for="step in 3" 
         :key="step"
         class="h-full flex-1 transition-all duration-500"
         :class="[
@@ -26,7 +26,7 @@
 
     <div class="flex justify-between items-center text-xs font-bold text-slate-400 uppercase tracking-wider px-2">
       <span>Evaluando tu proceso</span>
-      <span>Pregunta {{ currentStep }} de 5</span>
+      <span>Pregunta {{ currentStep }} de 3</span>
     </div>
 
     <!-- Contenedor de la Pregunta Activa -->
@@ -93,7 +93,7 @@
         <div v-else></div>
 
         <button
-          v-if="currentStep < 5"
+          v-if="currentStep < 3"
           type="button"
           @click="nextStep"
           :disabled="!answers[activeQuestionKey]"
@@ -124,95 +124,74 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import { useStudentStore } from '~/stores/student'
 
 const emit = defineEmits(['continuar'])
+const studentStore = useStudentStore()
 
 const currentStep = ref(1)
 const isSubmitting = ref(false)
 
 const answers = reactive<Record<string, number>>({
-  atencionDetalle: 0,
-  filtroInformacion: 0,
-  conexionPlaneacion: 0,
-  esfuerzoCognitivo: 0,
-  confianzaActual: 0
+  monitoreo1: 0,
+  monitoreo2: 0,
+  monitoreo3: 0
 })
 
-const questionsList = [
-  {
-    key: 'atencionDetalle',
-    dimension: 'Atención al detalle',
-    emoji: '🔍',
-    question: 'Mientras avanzabas en la historia y veías los datos del río (7.5 metros) o la saturación del suelo (90%), ¿qué tan concentrado estuviste en los números exactos o te dejaste llevar solo por la narración?',
-    options: [
-      { value: 1, label: 'Distracción total', desc: 'Me distraje por completo; no recuerdo ninguna cifra.' },
-      { value: 2, label: 'Atención superficial', desc: 'Vi los números, pero no les presté atención real.' },
-      { value: 3, label: 'Lectura cuidadosa', desc: 'Los leí con cuidado, pero tuve que devolverme a mirar el texto.' },
-      { value: 4, label: 'Enfoque técnico alto', desc: 'Estuve atento y retuve la mayoría de los datos técnicos.' },
-      { value: 5, label: 'Enfoque absoluto', desc: 'Estuve 100% enfocado; capté cada dato y unidad de medida a la primera.' }
-    ]
-  },
-  {
-    key: 'filtroInformacion',
-    dimension: 'Detección de trampas',
-    emoji: '🛑',
-    question: 'Cuando aparecieron el audio de WhatsApp y el discurso del político, ¿qué tan rápido dudaste de ellos antes de que Mateo mostrara la solución?',
-    options: [
-      { value: 1, label: 'Confianza ciega', desc: 'Si yo hubiera estado ahí, le habría creído de inmediato al WhatsApp.' },
-      { value: 2, label: 'Casi engañado', desc: 'Me parecieron creíbles al principio; casi caigo en la trampa.' },
-      { value: 3, label: 'Duda razonable', desc: 'Dudé un poco de las fuentes, pero esperé a ver qué hacía Mateo.' },
-      { value: 4, label: 'Detección rápida', desc: 'Identifiqué rápido que eran fuentes dudosas o con intereses ocultos.' },
-      { value: 5, label: 'Alerta instantánea', desc: 'Lo supe de inmediato; mi mente activó las alertas contra la desinformación al instante.' }
-    ]
-  },
-  {
-    key: 'conexionPlaneacion',
-    dimension: 'Alineación Estratégica',
-    emoji: '🧠',
-    question: 'Al inicio del sistema respondiste sobre qué tan bueno eras separando "ideas" de "razones". ¿Sentiste que mantuviste esa estrategia activa durante la lectura?',
-    options: [
-      { value: 1, label: 'Piloto automático', desc: 'Para nada, me olvidé de lo que planeé al principio y leí en piloto automático.' },
-      { value: 2, label: 'Recordatorio leve', desc: 'Me acordé un par de veces, pero me costó aplicarlo.' },
-      { value: 3, label: 'Aplicación reactiva', desc: 'Apliqué la estrategia solo cuando la lectura se puso difícil.' },
-      { value: 4, label: 'Aplicación proactiva', desc: 'Sí, intenté separar las propuestas de sus motivos en casi todo el texto.' },
-      { value: 5, label: 'Dominio completo', desc: 'Totalmente; usé la estrategia de inicio a fin para evaluar cada solución del desenlace.' }
-    ]
-  },
-  {
-    key: 'esfuerzoCognitivo',
-    dimension: 'Esfuerzo Mental',
-    emoji: '⚡',
-    question: '¿Qué tanto esfuerzo mental te está costando procesar la información técnica y los dilemas lógicos que plantea este sistema hasta el momento?',
-    options: [
-      { value: 1, label: 'Esfuerzo extremo', desc: 'Demasiado esfuerzo; me siento muy confundido con el nivel de las preguntas.' },
-      { value: 2, label: 'Esfuerzo alto', desc: 'Un esfuerzo alto; me cuesta conectar los datos climáticos con las decisiones.' },
-      { value: 3, label: 'Esfuerzo moderado', desc: 'Esfuerzo moderado; el sistema me hace pensar, pero voy entendiendo.' },
-      { value: 4, label: 'Esfuerzo bajo', desc: 'Esfuerzo bajo; me resulta cómodo analizar los argumentos planteados.' },
-      { value: 5, label: 'Sin esfuerzo', desc: 'Muy fácil; mi mente procesa la lógica y la validez de los textos sin problemas.' }
-    ]
-  },
-  {
-    key: 'confianzaActual',
-    dimension: 'Comprensión del problema',
-    emoji: '🪞',
-    question: 'Pensando en la escala del 1 al 5 que respondiste al puro inicio sobre "qué tanto sabías del tema", ¿cómo sientes tu nivel de comprensión sobre lo que ocurrió en Montería en este momento?',
-    options: [
-      { value: 1, label: 'Confusión continua', desc: 'Me siento igual o más confundido que antes.' },
-      { value: 2, label: 'Sin cambios', desc: 'Siento que sé lo mismo, no he descubierto nada nuevo.' },
-      { value: 3, label: 'Aclaración de dudas', desc: 'He aclarado un par de dudas sobre el comportamiento del río y las fuentes.' },
-      { value: 4, label: 'Comprensión avanzada', desc: 'Siento que ahora comprendo mucho mejor las causas y dinámicas del problema.' },
-      { value: 5, label: 'Analista experto', desc: 'Mi comprensión ha dado un giro total; ahora veo el problema con ojos de analista crítico.' }
-    ]
-  }
-]
+const questionsList = computed(() => {
+  const isPhase2 = studentStore.progress.phase === 'EVALUATION'
+  
+  return [
+    {
+      key: 'monitoreo1',
+      dimension: 'Autonomía',
+      emoji: '🙋‍♂️',
+      question: 'Hasta este momento, ¿Has solicitado ayuda al tutor? ¿Cuántas veces?',
+      options: [
+        { value: 1, label: 'Muchas veces', desc: 'He pedido ayuda en casi todos los desafíos.' },
+        { value: 2, label: 'Varias veces', desc: 'He usado las pistas entre 3 y 4 veces.' },
+        { value: 3, label: 'Algunas veces', desc: 'He usado la ayuda 1 o 2 veces.' },
+        { value: 4, label: 'Solo una vez', desc: 'Pedí ayuda en un desafío que me costó.' },
+        { value: 5, label: 'Ninguna', desc: 'No he necesitado pedir ayuda hasta ahora.' }
+      ]
+    },
+    {
+      key: 'monitoreo2',
+      dimension: 'Interés',
+      emoji: '⭐',
+      question: isPhase2 
+        ? 'En una escala del 1 al 5 ¿Qué tan interesante has sentido el texto?' 
+        : 'En una escala del 1 al 5 ¿Qué tan interesante has sentido el tema a tratar en SIMECT?',
+      options: [
+        { value: 1, label: 'Nada interesante', desc: 'Siento aburrimiento al leer la información.' },
+        { value: 2, label: 'Poco interesante', desc: 'Me cuesta mantener el interés.' },
+        { value: 3, label: 'Interesante', desc: 'Está bien, aunque hay partes que me aburren un poco.' },
+        { value: 4, label: 'Muy interesante', desc: 'Me llama la atención la situación y los datos.' },
+        { value: 5, label: 'Fascinante', desc: 'Siento mucha curiosidad por saber qué pasa y resolverlo.' }
+      ]
+    },
+    {
+      key: 'monitoreo3',
+      dimension: 'Gestión del tiempo',
+      emoji: '⏳',
+      question: '¿Estas cumpliendo con el tiempo que planteaste en la fase de planeación?',
+      options: [
+        { value: 1, label: 'Para nada', desc: 'Me estoy demorando muchísimo más de lo que pensé.' },
+        { value: 2, label: 'Lento', desc: 'Voy más lento de lo que planeé originalmente.' },
+        { value: 3, label: 'Regular', desc: 'Voy un poco atrasado, pero puedo recuperarme.' },
+        { value: 4, label: 'A buen ritmo', desc: 'Voy de acuerdo a lo que planeé, casi perfecto.' },
+        { value: 5, label: 'Totalmente', desc: 'Voy muy bien, incluso más rápido de lo esperado.' }
+      ]
+    }
+  ]
+})
 
-const activeQuestionData = computed(() => questionsList[currentStep.value - 1])
+const activeQuestionData = computed(() => questionsList.value[currentStep.value - 1])
 const activeQuestionKey = computed(() => activeQuestionData.value.key)
 
 const selectOption = (val: number) => {
   answers[activeQuestionKey.value] = val
-  // Auto-avanzar si no es la última pregunta (opcional, da un feeling ágil, pero mantenemos navegación para que revisen)
-  if (currentStep.value < 5) {
+  if (currentStep.value < 3) {
     setTimeout(() => {
       nextStep()
     }, 250)
@@ -220,7 +199,7 @@ const selectOption = (val: number) => {
 }
 
 const nextStep = () => {
-  if (currentStep.value < 5 && answers[activeQuestionKey.value] > 0) {
+  if (currentStep.value < 3 && answers[activeQuestionKey.value] > 0) {
     currentStep.value++
   }
 }
@@ -234,7 +213,6 @@ const prevStep = () => {
 const handleComplete = async () => {
   if (Object.values(answers).some(val => val === 0)) return
   isSubmitting.value = true
-  // Retraso de guardado visual de 800ms
   await new Promise(r => setTimeout(r, 800))
   emit('continuar', { ...answers })
   isSubmitting.value = false

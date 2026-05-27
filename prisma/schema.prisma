@@ -200,12 +200,12 @@ model MetacognitionChecklist {
   nivelAsignado Level? // BASIC / INTERMEDIATE / ADVANCED
   fase          Phase  @default(ANALYSIS)
 
-  // ── Preguntas JOL de Planeación Metacognitiva ─────────────────
-  seguridadSinAyuda      Int? // JOL 1: ¿Qué tan seguro sin pedir ayuda? (1-5)
-  seguridadTema          Int? // JOL 2: ¿Te sientes seguro del tema? (1-5)
-  tiempoEstimadoFase1    Int? // JOL 3: Tiempo estimado para Fase 1 (minutos)
-  atencionNumeros        Int? // JOL 4: ¿Qué tan acostumbrado a datos exactos? (1-5)
-  separacionArgumentos   Int? // JOL 5: ¿Qué tan bueno separando propuesta del porqué? (1-5)
+  // ── Preguntas JOL de Planeación Metacognitiva Dinámica ─────────────────
+  jol1      Int? // JOL 1
+  jol2      Int? // JOL 2
+  jol3      Int? // JOL 3
+  jol4      Int? // JOL 4
+  jol5      Int? // JOL 5
 
   // ── Campos legacy (mantener compatibilidad) ───────────────────
   queSe                   String? @db.Text
@@ -252,11 +252,9 @@ model MetacognitionMonitoring {
   studentProfileId    String
   subPhase            String   // "1.1"
   
-  atencionDetalle     Int?     // Escala 1-5: Atención a números exactos
-  filtroInformacion   Int?     // Escala 1-5: Filtro de trampas
-  conexionPlaneacion  Int?     // Escala 1-5: Mantener estrategia planeada
-  esfuerzoCognitivo   Int?     // Escala 1-5: Esfuerzo mental
-  confianzaActual     Int?     // Escala 1-5: Comprensión actual del problema
+  monitoreo1     Int?     // Escala 1-5: ¿Has solicitado ayuda? Cuántas veces
+  monitoreo2     Int?     // Escala 1-5: ¿Qué tan interesante has sentido el tema?
+  monitoreo3     Int?     // Escala 1-5: ¿Estás cumpliendo con el tiempo?
 
   createdAt           DateTime @default(now())
 

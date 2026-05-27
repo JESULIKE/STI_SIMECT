@@ -13,8 +13,8 @@
     <div class="mb-10">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
         <div>
-          <h2 class="text-3xl font-black tracking-tight uppercase italic text-black">Planeación</h2>
-          <p class="text-black text-sm font-black italic mt-1">Primer momento metacognitivo — JOL (Judgments of Learning)</p>
+          <h2 class="text-3xl font-black tracking-tight uppercase italic text-black">{{ phaseConfig.title }}</h2>
+          <p class="text-black text-sm font-black italic mt-1">{{ phaseConfig.subtitle }}</p>
         </div>
         <span class="bg-indigo-100 text-indigo-600 px-4 py-1 rounded-full font-mono font-bold text-sm shrink-0">
           {{ completedCount }}/5 completado
@@ -35,15 +35,14 @@
     <!-- Formulario -->
     <form @submit.prevent="handleSubmit" class="space-y-10 pb-12">
 
-      <!-- JOL 1: Seguridad sin ayuda -->
+      <!-- JOL 1 -->
       <div class="space-y-4">
         <label class="block text-sm font-black text-black uppercase tracking-widest">
           <span class="text-indigo-600 mr-2">01</span>
-          Desde este primer momento, ¿qué tan seguro te sientes de poder realizar el ejercicio
-          <strong>sin pedir ayuda al tutor</strong>?
+          {{ phaseConfig.q1 }}
         </label>
         <div class="flex items-center gap-2 md:gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
-          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Nada seguro</span>
+          <span class="text-[10px] font-black uppercase text-black w-16 text-center shrink-0">{{ phaseConfig.q1Labels[0] }}</span>
           <div class="flex-1 flex justify-between gap-2">
             <button
               v-for="val in 5" :key="val" type="button"
@@ -52,18 +51,18 @@
               :class="formData.jol1 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black hover:border-indigo-300'"
             >{{ val }}</button>
           </div>
-          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Muy seguro</span>
+          <span class="text-[10px] font-black uppercase text-black w-16 text-center shrink-0">{{ phaseConfig.q1Labels[1] }}</span>
         </div>
       </div>
 
-      <!-- JOL 2: Seguridad del tema -->
+      <!-- JOL 2 -->
       <div class="space-y-4" :class="formData.jol1 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
         <label class="block text-sm font-black text-black uppercase tracking-widest">
           <span class="text-indigo-500 mr-2">02</span>
-          ¿Te sientes seguro del <strong>tema</strong> que se va a tratar en SIMECT?
+          {{ phaseConfig.q2 }}
         </label>
         <div class="flex items-center gap-2 md:gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
-          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Nada seguro</span>
+          <span class="text-[10px] font-black uppercase text-black w-16 text-center shrink-0">{{ phaseConfig.q2Labels[0] }}</span>
           <div class="flex-1 flex justify-between gap-2">
             <button
               v-for="val in 5" :key="val" type="button"
@@ -72,28 +71,23 @@
               :class="formData.jol2 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black hover:border-indigo-300'"
             >{{ val }}</button>
           </div>
-          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Muy seguro</span>
+          <span class="text-[10px] font-black uppercase text-black w-16 text-center shrink-0">{{ phaseConfig.q2Labels[1] }}</span>
         </div>
       </div>
 
-      <!-- JOL 3: Tiempo estimado Fase 1 -->
+      <!-- JOL 3: Tiempo estimado -->
       <div class="space-y-4" :class="formData.jol2 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
         <label class="block text-sm font-black text-black uppercase tracking-widest">
           <span class="text-indigo-500 mr-2">03</span>
-          De acuerdo con la información que sabes hasta el momento, ¿cuánto tiempo crees que podrías
-          demorar realizando la <strong>primera fase</strong>?
+          {{ phaseConfig.q3 }}
         </label>
 
-        <!-- Alerta informativa sobre la Fase 1 -->
+        <!-- Alerta informativa sobre la Fase -->
         <div class="flex items-start gap-3 p-4 rounded-[20px] border-2 border-blue-200 bg-blue-50">
-          <span class="text-lg shrink-0">ℹ️</span>
+          <span class="text-lg shrink-0">{{ phaseConfig.alert.icon }}</span>
           <div>
-            <p class="text-xs font-black text-blue-800 uppercase tracking-wide mb-1">Recuerda: ¿Qué es la Fase 1?</p>
-            <p class="text-xs font-medium text-blue-700 leading-relaxed">
-              La <strong>Fase 1 — Análisis</strong> consta de <strong>2 subfases</strong> con un total de
-              <strong>4 actividades</strong>. Es la primera de 3 fases en SIMECT y se enfoca en identificar
-              hechos, datos y propósitos. Estima solo para <em>esta</em> fase, no para todo el sistema.
-            </p>
+            <p class="text-xs font-black text-blue-800 uppercase tracking-wide mb-1">{{ phaseConfig.alert.title }}</p>
+            <p class="text-xs font-medium text-blue-700 leading-relaxed" v-html="phaseConfig.alert.text"></p>
           </div>
         </div>
 
@@ -114,15 +108,14 @@
         </div>
       </div>
 
-      <!-- JOL 4: Atención a números -->
+      <!-- JOL 4 -->
       <div class="space-y-4" :class="formData.jol3 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
         <label class="block text-sm font-black text-black uppercase tracking-widest">
           <span class="text-indigo-500 mr-2">04</span>
-          ¿Qué tan acostumbrado estás a prestarle atención a los
-          <strong>números y unidades de medida exactas</strong>?
+          {{ phaseConfig.q4 }}
         </label>
         <div class="flex items-center gap-2 md:gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
-          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Nada</span>
+          <span class="text-[10px] font-black uppercase text-black w-16 text-center shrink-0">{{ phaseConfig.q4Labels[0] }}</span>
           <div class="flex-1 flex justify-between gap-2">
             <button
               v-for="val in 5" :key="val" type="button"
@@ -131,19 +124,18 @@
               :class="formData.jol4 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black hover:border-indigo-300'"
             >{{ val }}</button>
           </div>
-          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Mucho</span>
+          <span class="text-[10px] font-black uppercase text-black w-16 text-center shrink-0">{{ phaseConfig.q4Labels[1] }}</span>
         </div>
       </div>
 
-      <!-- JOL 5: Separar propuesta del porqué -->
+      <!-- JOL 5 -->
       <div class="space-y-4" :class="formData.jol4 > 0 ? 'opacity-100' : 'opacity-20 pointer-events-none'">
         <label class="block text-sm font-black text-black uppercase tracking-widest">
           <span class="text-indigo-500 mr-2">05</span>
-          ¿Qué tan bueno eres para separar <strong>lo que una persona propone hacer</strong>
-          del <strong>porqué dice que hay que hacerlo</strong>?
+          {{ phaseConfig.q5 }}
         </label>
         <div class="flex items-center gap-2 md:gap-4 rounded-2xl bg-slate-50 border border-slate-100 p-5">
-          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">No soy bueno</span>
+          <span class="text-[10px] font-black uppercase text-black w-16 text-center shrink-0">{{ phaseConfig.q5Labels[0] }}</span>
           <div class="flex-1 flex justify-between gap-2">
             <button
               v-for="val in 5" :key="val" type="button"
@@ -152,7 +144,7 @@
               :class="formData.jol5 === val ? 'border-indigo-500 bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'border-slate-200 bg-white text-black hover:border-indigo-300'"
             >{{ val }}</button>
           </div>
-          <span class="text-[10px] font-black uppercase text-black w-12 text-center shrink-0">Muy bueno</span>
+          <span class="text-[10px] font-black uppercase text-black w-16 text-center shrink-0">{{ phaseConfig.q5Labels[1] }}</span>
         </div>
       </div>
 
@@ -176,6 +168,9 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue'
+import { useStudentStore } from '~/stores/student'
+
+const studentStore = useStudentStore()
 
 const props = defineProps<{
   onboardingData?: { comprensionSIMECT: number; familiaridadTema: number } | null
@@ -191,11 +186,76 @@ const tiempoOpciones = [
 ]
 
 const formData = reactive({
-  jol1: 0,   // Seguridad sin ayuda
-  jol2: 0,   // Seguridad del tema
-  jol3: 0,   // Tiempo estimado Fase 1 (minutos)
-  jol4: 0,   // Atención a números
-  jol5: 0    // Separar propuesta del porqué
+  jol1: 0,
+  jol2: 0,
+  jol3: 0,
+  jol4: 0,
+  jol5: 0
+})
+
+const currentPhase = computed(() => (studentStore.progress.phase || 'ANALYSIS').toUpperCase())
+
+const phaseConfig = computed(() => {
+  if (currentPhase.value === 'EVALUATION') {
+    return {
+      title: 'Planeación',
+      subtitle: 'Fase 2: Evaluación — Segundo momento metacognitivo',
+      alert: {
+        icon: '⚖️',
+        title: 'Recuerda: ¿Qué es la Fase 2?',
+        text: 'En la <strong>Fase 2 — Evaluación</strong>, te enfocarás en analizar la credibilidad de las fuentes y la validez de los argumentos. Estima el tiempo solo para esta fase.'
+      },
+      q1: 'Para esta segunda fase, ¿Qué tan seguro te sientes de poder realizar el ejercicio sin pedir ayuda al tutor?',
+      q2: 'De acuerdo con la información que sabes hasta el momento, ¿Cuánto tiempo crees que podrías demorar realizando la segunda fase?',
+      q3: '¿Sientes interesante el tema que se está tratando en el sistema tutor SIMECT?',
+      q4: '¿Qué tan seguro estás de poder identificar si una fuente es falsa antes de verificarla?',
+      q5: '¿Qué tanta confianza sientes respecto a la veracidad de sus datos antes de investigar su origen?',
+      q1Labels: ['Nada seguro', 'Muy seguro'],
+      q2Labels: ['Poco tiempo', 'Mucho tiempo'],
+      q3Labels: ['Nada interesante', 'Muy interesante'],
+      q4Labels: ['Nada seguro', 'Muy seguro'],
+      q5Labels: ['Nada de confianza', 'Mucha confianza']
+    }
+  } else if (currentPhase.value === 'JUDGMENT') {
+    return {
+      title: 'Planeación',
+      subtitle: 'Fase 3: Juicio — Tercer momento metacognitivo',
+      alert: {
+        icon: '🎯',
+        title: 'Recuerda: ¿Qué es la Fase 3?',
+        text: 'En la <strong>Fase 3 — Juicio</strong>, te enfrentarás a la toma de decisiones definitivas y evaluarás soluciones a largo plazo. Estima el tiempo solo para esta fase.'
+      },
+      q1: 'Para esta tercera fase, ¿Qué tan seguro te sientes de poder realizar el ejercicio sin pedir ayuda al tutor?',
+      q2: 'De acuerdo con la información que sabes hasta el momento, ¿Cuánto tiempo crees que podrías demorar realizando la tercera fase?',
+      q3: '¿Sientes interesante el tema que se está tratando en el sistema tutor SIMECT?',
+      q4: '¿Qué tan bueno eres para separar tus gustos o tus rabias a la hora de dar una opinión seria sobre un problema?',
+      q5: '¿Qué tan seguro estás de que podrías defender y explicar los argumentos de un compañero que piensa totalmente diferente a ti, sin terminar discutiendo?',
+      q1Labels: ['Nada seguro', 'Muy seguro'],
+      q2Labels: ['Poco tiempo', 'Mucho tiempo'],
+      q3Labels: ['Nada interesante', 'Muy interesante'],
+      q4Labels: ['Nada bueno', 'Muy bueno'],
+      q5Labels: ['Nada seguro', 'Muy seguro']
+    }
+  } else {
+    return {
+      title: 'Planeación',
+      subtitle: 'Fase 1: Análisis — Primer momento metacognitivo JOL',
+      alert: {
+        icon: 'ℹ️',
+        title: 'Recuerda: ¿Qué es la Fase 1?',
+        text: 'La <strong>Fase 1 — Análisis</strong> consta de <strong>2 subfases</strong> con un total de <strong>4 actividades</strong>. Es la primera de 3 fases en SIMECT y se enfoca en identificar hechos, datos y propósitos. Estima solo para esta fase.'
+      },
+      q1: 'Desde este primer momento, ¿Qué tan seguro te sientes de poder realizar el ejercicio sin pedir ayuda al docente?',
+      q2: '¿Te sientes seguro del tema que se va a tratar en sistema tutor SIMECT?',
+      q3: 'De acuerdo con la información que sabes hasta el momento, ¿Cuánto tiempo crees que podrías demorar realizando la primera fase (este proceso)?',
+      q4: '¿Qué tan acostumbrado estás a prestarle atención a los números y unidades de medida exactas?',
+      q5: '¿Qué tan bueno eres para separar lo que una persona propone hacer del porqué dice que hay que hacerlo?',
+      q1Labels: ['Nada seguro', 'Muy seguro'],
+      q2Labels: ['Nada seguro', 'Muy seguro'],
+      q4Labels: ['Nada', 'Mucho'],
+      q5Labels: ['No soy bueno', 'Muy bueno']
+    }
+  }
 })
 
 const isSubmitting = ref(false)
@@ -218,15 +278,13 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   await new Promise(r => setTimeout(r, 1000))
   emit('submit', {
-    // JOL nuevas
-    seguridadSinAyuda:    formData.jol1,
-    seguridadTema:        formData.jol2,
-    tiempoEstimadoFase1:  formData.jol3,
-    atencionNumeros:      formData.jol4,
-    separacionArgumentos: formData.jol5,
-    // Datos del onboarding (pasados como prop)
-    comprensionSIMECT:   props.onboardingData?.comprensionSIMECT ?? null,
-    familiaridadTema:    props.onboardingData?.familiaridadTema ?? null,
+    jol1: formData.jol1,
+    jol2: formData.jol2,
+    jol3: formData.jol3,
+    jol4: formData.jol4,
+    jol5: formData.jol5,
+    comprensionSIMECT: props.onboardingData?.comprensionSIMECT ?? null,
+    familiaridadTema:  props.onboardingData?.familiaridadTema ?? null,
     timestamp: new Date().toISOString()
   })
   isSubmitting.value = false

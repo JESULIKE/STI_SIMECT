@@ -221,7 +221,7 @@ const phaseInfo = computed(() => {
           <span class="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-500">Misión del Nivel</span>
           <h3 class="text-4xl md:text-5xl font-black text-black italic uppercase tracking-tight">{{ title }}</h3>
           <p class="text-slate-800 text-lg max-w-2xl mx-auto font-medium leading-relaxed italic">
-            {{ description || "Demuestra tu capacidad de análisis para proteger el bosque seco tropical." }}
+            {{ description || "Demuestra tu capacidad de análisis para gestionar la emergencia en el río Sinú." }}
           </p>
         </div>
         <button @click="$emit('start')" class="px-20 py-6 bg-slate-900 text-white font-black uppercase tracking-[0.4em] text-sm rounded-3xl transition-all shadow-2xl hover:scale-105 active:scale-95">

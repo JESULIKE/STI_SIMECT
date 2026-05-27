@@ -140,6 +140,37 @@ export default defineEventHandler(async (event) => {
     const firstActivity = activities[0] || null
     const nivelInfo = NIVEL_LABELS[studentLevel]
 
+    // 8. Flujos metacognitivos pendientes (para reanudar en recargas)
+    const hasCompletedOnboarding = studentChecklists.length > 0;
+    
+    // Verificar si falta monitoreo de las subfases .1 completadas
+    let pendingMonitoringSubPhase: string | null = null;
+    const monitorings = studentProfileId 
+      ? await prisma.metacognitionMonitoring.findMany({ where: { studentProfileId } })
+      : [];
+    for (const sp of ['1.1', '2.1', '3.1']) {
+      if (completedSubPhases.has(sp) && !monitorings.some(m => m.subPhase === sp)) {
+        pendingMonitoringSubPhase = sp;
+        break; // Solo pedimos el primero que falte
+      }
+    }
+
+    // Verificar si falta reflexión de las subfases .2 completadas
+    let pendingReflectionSubPhase: string | null = null;
+    const reflections = studentProfileId
+      ? await prisma.reflection.findMany({ where: { studentProfileId }, include: { activityAttempt: { include: { activity: true } } } })
+      : [];
+    for (const sp of ['1.2', '2.2', '3.2']) {
+      if (completedSubPhases.has(sp)) {
+        // Buscar si hay una reflexión que pertenezca a un intento de una actividad de esta subfase
+        const hasRef = reflections.some(r => r.activityAttempt?.activity?.subPhase === sp);
+        if (!hasRef) {
+          pendingReflectionSubPhase = sp;
+          break;
+        }
+      }
+    }
+
     console.log(`[available] Nivel: ${studentLevel} | Subfase activa: ${activeSubPhase} | Actividad: ${firstActivity?.titulo || 'ninguna'}`)
 
     return {
@@ -149,7 +180,11 @@ export default defineEventHandler(async (event) => {
       context: pedagogicalContext,
       progressBars,
       activeSubPhase,
+      activePhase,
       hasCompletedChecklist: !!checklistForPhase,
+      hasCompletedOnboarding,
+      pendingMonitoringSubPhase,
+      pendingReflectionSubPhase,
       // Nivel actual del estudiante (para mostrar badge en UI)
       studentLevel: {
         code: studentLevel,

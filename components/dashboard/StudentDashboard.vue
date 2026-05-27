@@ -9,7 +9,7 @@ const studentStore = useStudentStore()
 
 // Datos reales para la narrativa basados en el Modelo de Dominio
 const nextChapter = {
-  title: 'Estado del Bosque Seco Tropical',
+  title: 'Inundaciones en Córdoba',
   description: 'Los informes satelitales confirman una tendencia alarmante en la región Caribe. Descubre los datos detrás de la pérdida de biodiversidad.',
   isNew: true,
   image: 'https://images.unsplash.com/photo-1592419044706-39796d40f98c?q=80&w=600&auto=format&fit=crop'

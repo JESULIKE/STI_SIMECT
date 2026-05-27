@@ -132,15 +132,29 @@ export function useLearningSession() {
         return
       }
 
+      // Actualizar fase activa desde backend
+      if (response.activePhase && response.activePhase !== studentStore.progress.phase) {
+        studentStore.progress.phase = response.activePhase
+      }
+
       // Sincronizar estado de checklist/onboarding con la base de datos
       if (response.hasCompletedChecklist) {
         studentStore.completeChecklist()
-        if (currentState.value === 'ONBOARDING' || currentState.value === 'CHECKLIST_PENDING') {
+        
+        // 1. Restaurar estados pendientes por orden de prioridad
+        if (response.pendingMonitoringSubPhase) {
+          currentActiveSubPhase.value = response.pendingMonitoringSubPhase
+          currentState.value = 'MONITORING_PENDING'
+        } else if (response.pendingReflectionSubPhase) {
+          currentActiveSubPhase.value = response.pendingReflectionSubPhase
+          currentState.value = 'REFLECTION_PENDING'
+        } else if (currentState.value === 'ONBOARDING' || currentState.value === 'CHECKLIST_PENDING' || currentState.value === 'MONITORING_PENDING' || currentState.value === 'REFLECTION_PENDING' || currentState.value === 'CELEBRATING') {
+          // Si estaba en un estado anterior y ya no hay pendientes, va a la actividad
           currentState.value = 'ACTIVITY_PRESENTATION'
         }
       } else {
         studentStore.requestChecklist()
-        currentState.value = isFirstTimeStudent.value ? 'ONBOARDING' : 'CHECKLIST_PENDING'
+        currentState.value = (isFirstTimeStudent.value && !response.hasCompletedOnboarding) ? 'ONBOARDING' : 'CHECKLIST_PENDING'
       }
 
       const list = response.data || []
@@ -150,10 +164,8 @@ export function useLearningSession() {
         studentStore.updateProgressBars(response.progressBars)
       }
 
-      // Si el checklist o el onboarding están pendientes, no debemos pre-cargar la actividad
-      // ni procesar el cambio de subfase o mostrar la narrativa (contexto) de forma prematura.
-      // Esperaremos a que el estudiante complete el checklist para cargar la actividad.
-      if (!response.hasCompletedChecklist) {
+      // Si hay un momento metacognitivo o onboarding pendiente, no cargamos actividad
+      if (!response.hasCompletedChecklist || response.pendingMonitoringSubPhase || response.pendingReflectionSubPhase) {
         currentActivityData.value = null
         return
       }
@@ -374,14 +386,15 @@ export function useLearningSession() {
       await $fetch('/api/student/metacognition/monitoring', {
         method: 'POST',
         body: {
-          ...data
+          ...data,
+          subPhase: currentActiveSubPhase.value
         }
       })
     } catch (error) {
       console.error('Error al guardar monitoreo:', error)
     }
 
-    // Tras completar el monitoreo intermedio de 1.1, cargamos la subfase 1.2
+    // Tras completar el monitoreo intermedio, cargamos la siguiente subfase
     await loadNextActivity()
     if (levelChangedAnnouncement.value) {
       currentState.value = 'LEVEL_ANNOUNCEMENT'
@@ -404,31 +417,14 @@ export function useLearningSession() {
     }
     
     if (lastEvaluation.value?.isSubPhaseComplete) {
-      const activePhase = studentStore.progress.phase
       const activeSubPhase = currentActiveSubPhase.value
       
-      if (activePhase === 'ANALYSIS') {
-        if (activeSubPhase === '1.1') {
-          // Fase 1 Subfase 1.1 completada -> Momento Monitoreo
-          currentState.value = 'MONITORING_PENDING'
-        } else {
-          // Fase 1 Subfase 1.2 completada -> Momento Control (Reflexión)
-          currentState.value = 'REFLECTION_PENDING'
-        }
+      if (activeSubPhase === '1.1' || activeSubPhase === '2.1' || activeSubPhase === '3.1') {
+        // Momento Monitoreo al finalizar cualquier subfase .1
+        currentState.value = 'MONITORING_PENDING'
       } else {
-        // Fases 2 y 3 no tienen monitoreo ni reflexión intermedia -> pasan directo
-        if (action === 'CHALLENGE_UNLOCK' || lastEvaluation.value?.unlockChapter) {
-          gamification.processLevelUp()
-          currentState.value = 'CELEBRATING'
-          return
-        }
-        
-        await loadNextActivity()
-        if (levelChangedAnnouncement.value) {
-          currentState.value = 'LEVEL_ANNOUNCEMENT'
-          return
-        }
-        currentState.value = 'ACTIVITY_PRESENTATION'
+        // Momento Control (Reflexión) al finalizar cualquier subfase .2
+        currentState.value = 'REFLECTION_PENDING'
       }
     } else {
       if (action === 'CHALLENGE_UNLOCK' || lastEvaluation.value?.unlockChapter) {

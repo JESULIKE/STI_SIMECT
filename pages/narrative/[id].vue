@@ -8,13 +8,13 @@ const { id } = route.params
 
 // Datos reales del capítulo ambiental basados en el Modelo de Dominio
 const chapter = {
-  title: 'Estado del Bosque Seco Tropical',
+  title: 'Alerta Temprana en el Río Sinú',
   content: `
-    Los informes satelitales recientes confirman una tendencia alarmante: el bosque seco tropical en la región Caribe ha perdido más del 90% de su cobertura original. Las manchas marrones en el mapa no son solo datos estadísticos; representan la fragmentación de un ecosistema vital.
+    A inicios de febrero de 2026, un frente frío persistente hizo que el río Sinú creciera peligrosamente en Córdoba. Mateo, un joven estudiante con rol de líder, se encontraba en el centro de mando local analizando boletines meteorológicos para entender la situación real.
+
+    El nivel del río en Montería alcanzó los 7.5 metros esa mañana y el reporte del IDEAM indicaba lluvias intensas de 40mm/h. Al notar que el suelo tenía una saturación del 90%, comprendió que había un riesgo inminente de inundación en zonas ribereñas.
     
-    La tala indiscriminada y el avance de la frontera ganadera son las causas directas más críticas identificadas hasta el momento. Esta pérdida no solo afecta a la flora y fauna local, como el Tití Cabeciblanco, sino que compromete la regulación hídrica de toda la región.
-    
-    Tu misión en este nivel es analizar profundamente los actores involucrados y las causas que impulsan este proceso. El conocimiento es la primera herramienta para la conservación.
+    Tu misión en este nivel es analizar profundamente los datos. El conocimiento y la objetividad son las primeras herramientas para gestionar la emergencia.
   `,
   audioUrl: '#',
 }
