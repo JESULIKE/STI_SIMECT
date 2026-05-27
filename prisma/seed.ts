@@ -6,25 +6,16 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Iniciando seed de la base de datos...')
 
-  // 1. Limpiar base de datos
-  await prisma.errorPattern.deleteMany()
-  await prisma.earnedBadge.deleteMany()
-  await prisma.badge.deleteMany()
-  await prisma.reflection.deleteMany()
-  await prisma.metacognitionChecklist.deleteMany()
-  await prisma.activityAttempt.deleteMany()
-  await prisma.activity.deleteMany()
-  await prisma.progress.deleteMany()
-  await prisma.sessionLog.deleteMany()
-  await prisma.studentProfile.deleteMany()
-  await prisma.user.deleteMany()
+  // 1. Limpiar base de datos (DESACTIVADO PARA EVITAR PÉRDIDA DE DATOS EN PRODUCCIÓN)
 
   // 2. Crear usuarios base
   const commonPassword = await bcrypt.hash('Jesu123', 10)
 
   // 2. Crear usuario docente
-  const teacherUser = await prisma.user.create({
-    data: {
+  const teacherUser = await prisma.user.upsert({
+    where: { email: 'jesus@simect.com' },
+    update: { password: commonPassword, name: 'Jesus Gonzalez', code: 'DOC-000', role: Role.TEACHER },
+    create: {
       email: 'jesus@simect.com',
       code: 'DOC-000',
       name: 'Jesus Gonzalez',
@@ -36,8 +27,10 @@ async function main() {
   console.log(`- Docente: Email: ${teacherUser.email} / Code: ${teacherUser.code} / Pass: Jesu123`)
 
   // 2. Crear usuario estudiante
-  const studentUser = await prisma.user.create({
-    data: {
+  const studentUser = await prisma.user.upsert({
+    where: { email: 'jesus.estudiante@simect.com' },
+    update: { password: commonPassword, name: 'Jesus Estudiante', code: 'EST-000', role: Role.STUDENT },
+    create: {
       email: 'jesus.estudiante@simect.com',
       code: 'EST-000',
       name: 'Jesus Estudiante',

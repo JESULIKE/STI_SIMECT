@@ -153,6 +153,39 @@ const floatingEmojis = [
   { emoji: '📌', delay: '0.9s', duration: '9s',  left: '91%', size: '1.4rem' },
   { emoji: '🧠', delay: '3.6s', duration: '6s',  left: '96%', size: '1.8rem' },
 ]
+
+const glosario = [
+  {
+    titulo: 'Pensamiento Crítico',
+    emoji: '🔍',
+    descripcion: 'Capacidad de analizar información, dudar de afirmaciones sin evidencia y evaluar argumentos antes de aceptarlos como verdaderos.'
+  },
+  {
+    titulo: 'Metacognición',
+    emoji: '🧠',
+    descripcion: 'Pensar sobre cómo piensas. Es ser consciente de tu propio aprendizaje, saber qué estrategias te funcionan y monitorear tu progreso.'
+  },
+  {
+    titulo: 'Falacia',
+    emoji: '⚠️',
+    descripcion: 'Un engaño o error oculto en un argumento. Parece lógico a primera vista, pero si lo analizas bien, te das cuenta de que la conclusión no tiene sentido.'
+  },
+  {
+    titulo: 'Fuente Confiable',
+    emoji: '⚖️',
+    descripcion: 'Información que proviene de expertos, estudios o instituciones serias que pueden ser verificadas y respaldadas por evidencia real.'
+  },
+  {
+    titulo: 'Hecho vs Opinión',
+    emoji: '📊',
+    descripcion: 'Un hecho es algo que se puede comprobar de forma objetiva (ej. "el río subió 2 metros"). Una opinión es lo que alguien cree o siente al respecto.'
+  },
+  {
+    titulo: 'JOL (Juicio de Aprendizaje)',
+    emoji: '⏱️',
+    descripcion: 'Es la estimación que haces sobre qué tan bien crees que has entendido algo o cuánto tiempo crees que te tomará resolver una tarea.'
+  }
+]
 </script>
 
 <template>
@@ -258,6 +291,31 @@ const floatingEmojis = [
               →
             </div>
           </button>
+
+          <!-- Glosario de Conceptos -->
+          <div class="bg-white rounded-[40px] p-8 md:p-10 shadow-xl border-2 border-slate-100">
+            <div class="flex items-center gap-4 mb-8">
+              <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                📖
+              </div>
+              <div>
+                <h2 class="text-xl md:text-2xl font-black text-black italic uppercase tracking-tighter">Glosario SIMECT</h2>
+                <p class="text-xs text-slate-500 font-medium">Conceptos clave para tu entrenamiento mental</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div v-for="(concepto, i) in glosario" :key="i" class="bg-slate-50 p-5 rounded-3xl border border-slate-100 hover:border-indigo-200 transition-colors group">
+                <div class="flex items-start gap-3 mb-2">
+                  <span class="text-xl group-hover:scale-110 transition-transform">{{ concepto.emoji }}</span>
+                  <h3 class="text-sm font-black text-indigo-900 uppercase tracking-widest">{{ concepto.titulo }}</h3>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed font-medium pl-8">
+                  {{ concepto.descripcion }}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Columna Derecha: Narrativa (Pantalla 3) -->

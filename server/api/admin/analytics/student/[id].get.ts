@@ -20,18 +20,20 @@ export default defineEventHandler(async (event) => {
           select: {
             id: true,
             createdAt: true,
-            queSe: true,                    // Plan de resolución (q1)
-            queEsperoAprender: true,        // Expectativa (q2)
-            confianzaInicial: true,         // Confianza 1-5 (q3)
-            estrategias: true,              // Estrategia elegida (q4)
-            entornoSinDistracciones: true,  // Confirmó entorno (q5)
-            seguridadSinAyuda: true,        // JOL 1
-            seguridadTema: true,            // JOL 2
-            tiempoEstimadoFase1: true,      // JOL 3
-            atencionNumeros: true,          // JOL 4
-            separacionArgumentos: true,     // JOL 5
-            comprensionSIMECT: true,        // Onboarding 1
-            familiaridadTema: true          // Onboarding 2
+            fase: true,
+            jol1: true,
+            jol2: true,
+            jol3: true,
+            jol4: true,
+            jol5: true,
+            // Fallback legacy por si acaso
+            queSe: true,
+            queEsperoAprender: true,
+            confianzaInicial: true,
+            estrategias: true,
+            entornoSinDistracciones: true,
+            comprensionSIMECT: true,
+            familiaridadTema: true
           }
         },
 
@@ -79,11 +81,9 @@ export default defineEventHandler(async (event) => {
           select: {
             id: true,
             subPhase: true,
-            atencionDetalle: true,
-            filtroInformacion: true,
-            conexionPlaneacion: true,
-            esfuerzoCognitivo: true,
-            confianzaActual: true,
+            monitoreo1: true,
+            monitoreo2: true,
+            monitoreo3: true,
             createdAt: true
           }
         }
