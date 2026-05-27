@@ -239,7 +239,7 @@ watch(currentState, (newState) => {
     <main class="max-w-5xl mx-auto px-4 py-8 md:py-12 relative" v-show="currentState !== 'CELEBRATING' && currentState !== 'READING_NARRATIVE' && currentState !== 'ONBOARDING' && currentState !== 'LEVEL_ANNOUNCEMENT' && currentState !== 'MONITORING_PENDING'">
       
       <!-- Cargando Activity Data / Finalización -->
-      <div v-if="!currentActivityData && currentState !== 'CHECKLIST_PENDING'" class="flex flex-col items-center justify-center py-12 text-center space-y-6">
+      <div v-if="!currentActivityData && currentState !== 'CHECKLIST_PENDING' && currentState !== 'REFLECTION_PENDING'" class="flex flex-col items-center justify-center py-12 text-center space-y-6">
         
         <!-- Tarjeta Premium de Felicitaciones -->
         <div v-if="isSessionComplete" class="max-w-xl w-full bg-white rounded-[48px] border-2 border-slate-100 p-12 text-center space-y-8 animate-in fade-in zoom-in-95 duration-700 relative overflow-hidden shadow-2xl shadow-indigo-600/5">
@@ -293,10 +293,11 @@ watch(currentState, (newState) => {
       <!-- La Actividad (Maneja todos los estados internos) -->
       <div v-else class="animate-in fade-in zoom-in-95 duration-500">
         <BaseActivity
-          :title="currentActivityData?.titulo || 'Planificación Inicial'"
+          :title="currentActivityData?.titulo || 'Punto de Control'"
           :description="currentActivityData?.descripcion"
+          :contexto="currentActivityData?.contenido?.contexto"
           :material-apoyo="currentActivityData?.materialApoyo"
-          :state="currentState === 'CHECKLIST_PENDING' ? 'checklist' : activityManager.state.value"
+          :state="currentState === 'CHECKLIST_PENDING' ? 'checklist' : (currentState === 'REFLECTION_PENDING' ? 'finished' : activityManager.state.value)"
           :time-formatted="activityManager.formattedTime.value"
           :progress="{ 
             activity: studentStore.progress.currentActivityProgress, 

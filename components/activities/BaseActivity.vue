@@ -5,6 +5,7 @@ import { useStudentStore } from '~/stores/student'
 const props = defineProps<{
   title: string
   description?: string
+  contexto?: string
   timeFormatted: string
   state: 'idle' | 'in_progress' | 'evaluating' | 'finished' | 'checklist'
   maxScore?: number
@@ -231,6 +232,13 @@ const phaseInfo = computed(() => {
 
       <!-- Pantalla: Actividad en Curso -->
       <div v-if="state === 'in_progress'" class="p-8 md:p-12">
+        
+        <!-- ENUNCIADO / CONTEXTO -->
+        <div v-if="contexto" class="bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 mb-8 shadow-sm text-center">
+          <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Contexto del Evento</p>
+          <p class="text-lg font-medium text-black leading-relaxed italic">"{{ contexto }}"</p>
+        </div>
+
         <div id="tour-workspace" class="min-h-[40vh] mb-12">
           <slot />
         </div>

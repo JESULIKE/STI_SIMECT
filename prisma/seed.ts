@@ -95,7 +95,7 @@ async function main() {
       nivel: Level.BASIC,
       tipo: ActivityType.FILL_IN_THE_BLANK,
       contenido: {
-        "contexto": null,
+        "contexto": "El nivel del río Sinú en Montería alcanzó los 7.5 metros esta mañana.",
         "pregunta": "Completa el espacio en blanco con el dato exacto del texto.",
         "plantilla": "El nivel del río Sinú en Montería alcanzó los _____ esta mañana.",
         "opciones": [
@@ -123,7 +123,7 @@ async function main() {
       nivel: Level.BASIC,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       contenido: {
-        "contexto": null,
+        "contexto": "El nivel del río Sinú en Montería alcanzó los 7.5 metros esta mañana.",
         "pregunta": "Selecciona la unidad de medida utilizada en el reporte.",
         "opciones": [
                 {
@@ -170,7 +170,7 @@ async function main() {
       nivel: Level.INTERMEDIATE,
       tipo: ActivityType.TEXT_MARKUP,
       contenido: {
-        "contexto": null,
+        "contexto": "El boletín del IDEAM indica lluvias de 40mm/h; el cielo se observa 'muy cargado'.",
         "pregunta": "Lee el siguiente texto y subraya únicamente el dato técnico que indica la intensidad de lluvia.",
         "texto": "El boletín del IDEAM indica lluvias de 40mm/h; el cielo se observa muy cargado.",
         "opciones": [
@@ -199,7 +199,7 @@ async function main() {
       nivel: Level.INTERMEDIATE,
       tipo: ActivityType.MATCHING,
       contenido: {
-        "contexto": null,
+        "contexto": "El boletín del IDEAM indica lluvias de 40mm/h.",
         "pregunta": "Empareja cada fuente de información con su función principal.",
         "pares": [
                 {
@@ -247,7 +247,7 @@ async function main() {
       nivel: Level.ADVANCED,
       tipo: ActivityType.FILL_IN_THE_BLANK,
       contenido: {
-        "contexto": null,
+        "contexto": "La presión de 1012 hPa y la saturación del suelo al 90% sugieren riesgo.",
         "pregunta": "Completa el espacio con la medida exacta de presión atmosférica.",
         "plantilla": "La presión atmosférica registrada es de _____ y la saturación del suelo es del 90%.",
         "opciones": [
@@ -275,7 +275,7 @@ async function main() {
       nivel: Level.ADVANCED,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       contenido: {
-        "contexto": null,
+        "contexto": "La saturación del suelo ha llegado al 90% en las laderas.",
         "pregunta": "¿Qué porcentaje de saturación tiene el suelo?",
         "opciones": [
                 {
@@ -322,7 +322,7 @@ async function main() {
       nivel: Level.BASIC,
       tipo: ActivityType.TEXT_MARKUP,
       contenido: {
-        "contexto": null,
+        "contexto": "Debemos evacuar el barrio para proteger a los niños y ancianos.",
         "pregunta": "Lee el mensaje y subraya la acción principal que se propone.",
         "texto": "Debemos evacuar el barrio para proteger a los niños y ancianos.",
         "opciones": [
@@ -351,7 +351,7 @@ async function main() {
       nivel: Level.BASIC,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       contenido: {
-        "contexto": null,
+        "contexto": "Debemos evacuar para proteger a niños y ancianos prioritariamente.",
         "pregunta": "¿A quiénes se busca proteger principalmente según el texto?",
         "opciones": [
                 {
@@ -398,7 +398,7 @@ async function main() {
       nivel: Level.INTERMEDIATE,
       tipo: ActivityType.DRAG_AND_DROP,
       contenido: {
-        "contexto": null,
+        "contexto": "Poner costales de arena es mejor que salir, porque así cuidamos las casas.",
         "pregunta": "Arrastra cada elemento al cuadro correcto.",
         "categorias": [
                 {
@@ -444,7 +444,7 @@ async function main() {
       nivel: Level.INTERMEDIATE,
       tipo: ActivityType.ARROW_MATCHING,
       contenido: {
-        "contexto": null,
+        "contexto": "Poner costales es mejor para evitar que el agua dañe los muebles.",
         "pregunta": "Une con una flecha cada solución con el argumento que la justifica.",
         "izquierda": [
                 {
@@ -490,7 +490,7 @@ async function main() {
       nivel: Level.ADVANCED,
       tipo: ActivityType.CLASSIFICATION,
       contenido: {
-        "contexto": null,
+        "contexto": "Reubicar familias es costoso hoy, pero evita tragedias cíclicas cada invierno.",
         "pregunta": "Clasifica los siguientes elementos según su horizonte de impacto.",
         "columnas": [
                 {
@@ -546,7 +546,7 @@ async function main() {
       nivel: Level.ADVANCED,
       tipo: ActivityType.FILL_IN_THE_BLANK,
       contenido: {
-        "contexto": null,
+        "contexto": "Reubicar familias implica una inversión muy alta en este momento.",
         "pregunta": "Completa el espacio en blanco según el texto.",
         "plantilla": "Según el texto, el argumento en contra de reubicar familias es que _____.",
         "opciones": [
@@ -574,7 +574,7 @@ async function main() {
       nivel: Level.BASIC,
       tipo: ActivityType.TRAFFIC_LIGHT,
       contenido: {
-        "contexto": null,
+        "contexto": "Audio WhatsApp: 'Se rompió la represa'. Boletín Alcaldía: 'Estable'.",
         "pregunta": "Evalúa cada fuente y asígnale un color de semáforo según su confiabilidad.",
         "fuentes": [
                 {
@@ -608,7 +608,7 @@ async function main() {
       nivel: Level.BASIC,
       tipo: ActivityType.MATCHING,
       contenido: {
-        "contexto": null,
+        "contexto": "WhatsApp anónimo vs Comunicado Oficial de Montería.",
         "pregunta": "Empareja cada fuente con su característica principal.",
         "pares": [
                 {
@@ -644,7 +644,7 @@ async function main() {
       nivel: Level.INTERMEDIATE,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       contenido: {
-        "contexto": null,
+        "contexto": "Testimonio de un vecino afectado vs Informe de un ingeniero.",
         "pregunta": "¿Quién es el experto técnico capacitado en el tema?",
         "opciones": [
                 {
@@ -691,7 +691,7 @@ async function main() {
       nivel: Level.INTERMEDIATE,
       tipo: ActivityType.CLASSIFICATION,
       contenido: {
-        "contexto": null,
+        "contexto": "Vecino: 'El agua subió por culpa de las obras'. Ingeniero: 'Por lluvia'.",
         "pregunta": "Clasifica las siguientes afirmaciones según su tipo.",
         "columnas": [
                 {
@@ -747,7 +747,7 @@ async function main() {
       nivel: Level.ADVANCED,
       tipo: ActivityType.TRAFFIC_LIGHT,
       contenido: {
-        "contexto": null,
+        "contexto": "Científico de la Universidad vs Candidato a la Alcaldía en barrio.",
         "pregunta": "Evalúa el nivel de neutralidad de cada fuente.",
         "fuentes": [
                 {
@@ -791,7 +791,7 @@ async function main() {
       nivel: Level.ADVANCED,
       tipo: ActivityType.DRAG_AND_DROP,
       contenido: {
-        "contexto": null,
+        "contexto": "Estudio hidrológico vs Discurso de político en zona afectada.",
         "pregunta": "Arrastra cada fuente al cuadrante que le corresponde según su objetividad y propósito.",
         "categorias": [
                 {
@@ -849,7 +849,7 @@ async function main() {
       nivel: Level.BASIC,
       tipo: ActivityType.ARROW_MATCHING,
       contenido: {
-        "contexto": null,
+        "contexto": "Llovió mucho en la parte alta, por eso el río se desbordó.",
         "pregunta": "Une con una flecha cada causa con su efecto lógico.",
         "izquierda": [
                 {
@@ -911,7 +911,7 @@ async function main() {
       nivel: Level.BASIC,
       tipo: ActivityType.SEQUENCE_ORDER,
       contenido: {
-        "contexto": null,
+        "contexto": "Lluvias intensas -> Inundación de calles.",
         "pregunta": "Ordena los siguientes eventos de acuerdo con la secuencia lógica de causa a efecto.",
         "items": [
                 {
@@ -955,7 +955,7 @@ async function main() {
       nivel: Level.INTERMEDIATE,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       contenido: {
-        "contexto": null,
+        "contexto": "En 2010 no se inundó mi casa, así que ahora tampoco pasará nada.",
         "pregunta": "¿El hecho de que no pasara antes asegura que no pasará hoy?",
         "opciones": [
                 {
@@ -990,7 +990,7 @@ async function main() {
       nivel: Level.INTERMEDIATE,
       tipo: ActivityType.MATCHING,
       contenido: {
-        "contexto": null,
+        "contexto": "Mi casa es alta, nunca le llegará el agua.",
         "pregunta": "Empareja cada afirmación con el tipo de error lógico que representa.",
         "pares": [
                 {
@@ -1032,7 +1032,7 @@ async function main() {
       nivel: Level.ADVANCED,
       tipo: ActivityType.SEQUENCE_ORDER,
       contenido: {
-        "contexto": null,
+        "contexto": "Si no lloviera, no habría pobres; por tanto, la lluvia causa pobreza.",
         "pregunta": "Ordena los pasos del argumento según la secuencia lógica en que aparecen.",
         "items": [
                 {
@@ -1071,7 +1071,7 @@ async function main() {
       nivel: Level.ADVANCED,
       tipo: ActivityType.MULTIPLE_CHOICE_REASONED,
       contenido: {
-        "contexto": null,
+        "contexto": "Lluvia -> Pobreza.",
         "pregunta": "¿Existe una conexión real y directa de causa entre estos dos fenómenos?",
         "opciones": [
                 {
@@ -1114,6 +1114,7 @@ async function main() {
       tipo: ActivityType.MATCHING,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Debo decidir entre comprar agua potable o comida para hoy.",
         pregunta: 'Asigna a cada elemento su grado de urgencia o prioridad vital en situaciones extremas.',
         pares: [
           { id: 'a1', izquierda: 'Agua potable', derecha: 'Prioridad vital inmediata' },
@@ -1144,6 +1145,7 @@ async function main() {
       tipo: ActivityType.CLASSIFICATION,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Agua o Comida: Solo tengo dinero para una cosa.",
         pregunta: 'Clasifica los siguientes enunciados según representen una "Urgencia Vital" o una "Necesidad de Apoyo".',
         columnas: [
           { id: 'urgencia', label: 'Urgencia Vital / Supervivencia', color: 'red' },
@@ -1178,6 +1180,7 @@ async function main() {
       tipo: ActivityType.TRAFFIC_LIGHT,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Prefiero quedarme en el techo cuidando mi televisor que ir al albergue.",
         pregunta: 'Califica la prioridad y confiabilidad ética de cada decisión frente a un riesgo inminente.',
         fuentes: [
           { id: 'f1', nombre: 'Quedarse en el techo de una casa inundada cuidando el televisor por miedo al robo.' },
@@ -1206,6 +1209,7 @@ async function main() {
       tipo: ActivityType.FILL_IN_THE_BLANK,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Decidir quedarse en casa inundada por miedo al robo.",
         pregunta: 'Completa el enunciado identificando el factor principal que guía la decisión.',
         plantilla: 'Decidir quedarse en casa inundada por miedo al robo es un juicio guiado principalmente por _____.',
         opciones: ['En el miedo', 'La razón técnica', 'La prudencia', 'El sentido común']
@@ -1227,6 +1231,7 @@ async function main() {
       tipo: ActivityType.DRAG_AND_DROP,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Invertir en canales de drenaje definitivos vs. dar mercados hoy.",
         pregunta: 'Clasifica los beneficios y características de cada tipo de respuesta ante inundaciones.',
         categorias: [
           { id: 'sostenible', label: 'Estrategia Sostenible y de Raíz (Canales)' },
@@ -1264,7 +1269,7 @@ async function main() {
         pregunta: 'Completa la evaluación sobre las posturas ciudadanas frente a las crisis climáticas.',
         plantilla: 'Una propuesta ciudadana enfocada en construir infraestructura definitiva contra inundaciones representa una postura de tipo _____.',
         opciones: ['Responsable y Sostenible', 'Preventiva y Solidaria', 'Comprometida y de Acción ciudadana', 'Medida preventiva comunitaria'],
-        contexto: '"Propuesta ciudadana: Infraestructura contra inundaciones."'
+        contexto: "Propuesta ciudadana: Infraestructura contra inundaciones.",
       },
       claveRespuestas: {
         respuestaExacta: 'Responsable y Sostenible'
@@ -1283,6 +1288,7 @@ async function main() {
       tipo: ActivityType.MATCHING,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Alcalde: 'Evacuen'. Niño: 'Tengo miedo de dejar mi perro'.",
         pregunta: 'Relaciona a cada actor de la situación de emergencia con su enfoque principal.',
         pares: [
           { id: 'p1', izquierda: 'Alcalde / Institución', derecha: 'Autoridad y seguridad colectiva ("Evacuen")' },
@@ -1309,6 +1315,7 @@ async function main() {
       tipo: ActivityType.FILL_IN_THE_BLANK,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "El niño llora porque no quiere dejar su mascota.",
         pregunta: 'Completa el enunciado identificando al sujeto con la perspectiva afectiva descrita.',
         plantilla: 'El llanto por no querer dejar a una mascota durante una orden de evacuación representa la perspectiva emocional del _____.',
         opciones: ['Niño', 'Alcalde', 'Vecino', 'Tutor']
@@ -1330,6 +1337,7 @@ async function main() {
       tipo: ActivityType.ARROW_MATCHING,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "El vecino de la orilla pide que cierren las compuertas ya. Teme perder su hogar",
         pregunta: 'Asocia a cada actor con la principal preocupación que guía su perspectiva en esta emergencia.',
         izquierda: [
           { id: 'iz1', texto: 'Ribereño (vecino de la orilla)' },
@@ -1360,6 +1368,7 @@ async function main() {
       tipo: ActivityType.FILL_IN_THE_BLANK,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Un mismo fenómeno (lluvia) visto por dos personas distintas.",
         pregunta: 'Analiza la posibilidad de que dos personas tengan perspectivas válidas pero opuestas.',
         plantilla: '¿Es posible que dos personas tengan la razón al mismo tiempo ante un mismo fenómeno climático? _____',
         opciones: ['Sí (por su contexto)', 'No, solo una tiene razón', 'Depende de quién hable', 'La lluvia afecta igual a todos']
@@ -1381,6 +1390,7 @@ async function main() {
       tipo: ActivityType.CLASSIFICATION,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Cerrar la vía por protesta ayuda al pueblo, pero frena ambulancias.",
         pregunta: 'Clasifica cada derecho en conflicto según corresponda a una perspectiva de Interés Colectivo o Vital/Humana.',
         columnas: [
           { id: 'colectivo', label: 'Interés Colectivo / Social', color: 'blue' },
@@ -1415,6 +1425,7 @@ async function main() {
       tipo: ActivityType.MATCHING,
       puntajeMaximo: 100,
       contenido: {
+        contexto: "Derecho a la protesta vs Derecho a la salud/vida.",
         pregunta: 'Relaciona los derechos en tensión con su clasificación según el estándar de justicia.',
         pares: [
           { id: 'p1', izquierda: 'Derecho a la Protesta', derecha: 'Protesta (Col) / Interés colectivo' },
